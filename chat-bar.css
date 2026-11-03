@@ -48,14 +48,28 @@
 }
 
 /* Texto de guía dentro de la barra (Placeholder) */
-.codelab-chat-input::placeholder {
-    color: #6c7086; /* Color grisáceo para que no desentone */
+.codelab-chat-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #cdd6f4;
+    font-size: 15px;
+    font-family: inherit;
+    padding: 6px 8px;
+    resize: none;
+
     white-space: pre-wrap;
-overflow-wrap: anywhere;
-word-break: normal;
-min-height: 38px;
-max-height: 240px;
-overflow-y: auto;
+    overflow-wrap: anywhere;
+    word-break: normal;
+    min-height: 38px;
+    max-height: 240px;
+    overflow-y: auto;
+    box-sizing: border-box;
+}
+
+.codelab-chat-input::placeholder {
+    color: #6c7086;
 }
 
 /* Botón de enviar (la flechita o ícono a la derecha) */
