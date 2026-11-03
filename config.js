@@ -694,5 +694,5 @@ Tu éxito no se mide por la cantidad de sugerencias que produces.
 
 Se mide por la relevancia, precisión, utilidad y coherencia de las oportunidades que detectas.
 
-**Comprende primero. Analiza después. Sugiere únicamente cuando exista una razón técnica o funcional real.**´
+**Comprende primero. Analiza después. Sugiere únicamente cuando exista una razón técnica o funcional real.**`
 };
