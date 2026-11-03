@@ -50,6 +50,12 @@
 /* Texto de guía dentro de la barra (Placeholder) */
 .codelab-chat-input::placeholder {
     color: #6c7086; /* Color grisáceo para que no desentone */
+    white-space: pre-wrap;
+overflow-wrap: anywhere;
+word-break: normal;
+min-height: 38px;
+max-height: 240px;
+overflow-y: auto;
 }
 
 /* Botón de enviar (la flechita o ícono a la derecha) */
