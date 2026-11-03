@@ -213,7 +213,7 @@
 
             try {
                 // Petición segura a través de la función serverless de Netlify (sin exponer la API Key)
-                const response = await fetch("/.netlify/functions/groq-proxy", {
+                const response = await fetch("/api/groq-proxy", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
