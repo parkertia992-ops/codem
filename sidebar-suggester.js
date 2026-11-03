@@ -8,7 +8,6 @@ class CodelabDynamicSidebar {
         this.initUI();
     }
 
-    // Inyecta el botón de tres rayitas y el panel lateral limpio
     initUI() {
         const menuBtn = document.createElement('button');
         menuBtn.id = 'codelab-menu-toggle';
@@ -113,7 +112,6 @@ class CodelabDynamicSidebar {
         return contextoAcumulado.trim() || "Proyecto web en desarrollo.";
     }
 
-    // Pide a Groq que genere preguntas y sugerencias reales basadas estrictamente en el contexto
     async generarPreguntasConGroq() {
         const container = document.getElementById('codelab-suggestions-container');
         container.innerHTML = `<p style="font-size: 12px; color: #a6adc8; text-align: center; margin-top: 20px;">Generando sugerencias inteligentes...</p>`;
@@ -125,7 +123,7 @@ class CodelabDynamicSidebar {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    model: "gpt-oss-20b", // Usamos el modelo ágil para sugerencias
+                    model: "gpt-oss-20b",
                     messages: [
                         {
                             role: "system",
@@ -146,14 +144,11 @@ class CodelabDynamicSidebar {
             const data = await response.json();
             const textResponse = data.choices[0].message.content.trim();
             
-            // Limpiar y parsear las preguntas que devuelve Groq
             let preguntas = [];
             try {
-                // Intentar limpiar bloques de código si los trae
                 const jsonClean = textResponse.replace(/```json/g, '').replace(/```/g, '').trim();
                 preguntas = JSON.parse(jsonClean);
             } catch (e) {
-                // Fallback si el modelo responde en texto plano con saltos de línea
                 preguntas = textResponse.split('\n').filter(p => p.trim().length > 5).slice(0, 3);
             }
 
@@ -168,7 +163,7 @@ class CodelabDynamicSidebar {
                 btn.className = 'codelab-dynamic-chip';
                 btn.innerText = `💡 ${pregunta.replace(/^[0-9#\-\.\*]\s*/, '')}`;
                 btn.onclick = () => {
-                    const inputField = document.querySelector('textarea, input[type="text"]');
+                    const inputField = document.getElementById('codelabInput');
                     if (inputField) {
                         inputField.value = pregunta;
                         inputField.focus();
@@ -179,7 +174,7 @@ class CodelabDynamicSidebar {
             });
 
         } catch (error) {
-            container.innerHTML = `<p style="font-size: 12px; color: #f38ba8; text-align: center;">No se pudieron cargar las sugerencias en este momento. Intente de nuevo.</p>`;
+            container.innerHTML = `<p style="font-size: 12px; color: #f38ba8; text-align: center;">El servicio de asistencia se encuentra temporalmente ocupado optimizando recursos. Por favor, intente de nuevo en unos segundos.</p>`;
         }
     }
 }
