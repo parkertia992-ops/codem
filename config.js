@@ -34,3 +34,4 @@ INSTRUCCIONES:
 Tu función principal es desarrollar soluciones de programación completas, coherentes y funcionales.
 
 Responde en español y proporciona instrucciones técnicas precisas.`
+};
