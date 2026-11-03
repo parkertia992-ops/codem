@@ -1,20 +1,19 @@
 /* ========================================================================== */
-/* ARCHIVO: sidebar-suggester.js (Módulo con lectura de contexto y delegación) */
+/* ARCHIVO: sidebar-suggester.js (Sugerencias dinámicas generadas por Groq)     */
 /* ========================================================================== */
 
-class CodelabSidebarManager {
+class CodelabDynamicSidebar {
     constructor() {
         this.isOpen = false;
         this.initUI();
     }
 
-    // Inyecta el menú lateral de tres rayitas y los botones de acción experta
+    // Inyecta el botón de tres rayitas y el panel lateral limpio
     initUI() {
-        // Botón flotante de tres rayitas (Menú)
         const menuBtn = document.createElement('button');
         menuBtn.id = 'codelab-menu-toggle';
         menuBtn.innerHTML = '☰';
-        menuBtn.title = 'Panel de Asistencia y Directivas 20B';
+        menuBtn.title = 'Preguntas sugeridas';
         
         Object.assign(menuBtn.style, {
             position: 'fixed',
@@ -35,7 +34,6 @@ class CodelabSidebarManager {
         menuBtn.onmouseover = () => menuBtn.style.backgroundColor = '#313244';
         menuBtn.onmouseout = () => menuBtn.style.backgroundColor = '#1e1e2e';
 
-        // Panel lateral (Drawer)
         const sidebar = document.createElement('div');
         sidebar.id = 'codelab-sidebar-panel';
         Object.assign(sidebar.style, {
@@ -59,32 +57,20 @@ class CodelabSidebarManager {
 
         sidebar.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #313244; padding-bottom: 12px;">
-                <h3 style="margin: 0; font-size: 15px; color: #89b4fa;">Optimizador Contextual (20B)</h3>
+                <h3 style="margin: 0; font-size: 15px; color: #89b4fa;">Preguntas sugeridas</h3>
                 <button id="codelab-sidebar-close" style="background: none; border: none; color: #a6adc8; font-size: 18px; cursor: pointer;">✕</button>
             </div>
-            <p style="font-size: 12px; color: #a6adc8; line-height: 1.4; margin-bottom: 16px;">
-                Este módulo analiza el código y la conversación actual para inyectar mejoras precisas al núcleo (120B):
-            </p>
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-                <button class="codelab-suggestion-chip" data-action="cyber">
-                    🛡️ Añadir Ciberseguridad al código actual
-                </button>
-                <button class="codelab-suggestion-chip" data-action="performance">
-                    ⚡ Optimizar rendimiento y modularidad
-                </button>
-                <button class="codelab-suggestion-chip" data-action="ui">
-                    🔘 Integrar componente UI adicional
-                </button>
+            <div id="codelab-suggestions-container" style="display: flex; flex-direction: column; gap: 10px; overflow-y: auto;">
+                <p style="font-size: 12px; color: #a6adc8; text-align: center; margin-top: 20px;">Analizando proyecto...</p>
             </div>
         `;
 
         document.body.appendChild(menuBtn);
         document.body.appendChild(sidebar);
 
-        // Estilos limpios para los botones internos del menú
         const styleSheet = document.createElement('style');
         styleSheet.innerHTML = `
-            .codelab-suggestion-chip {
+            .codelab-dynamic-chip {
                 background-color: #1e1e2e;
                 color: #cdd6f4;
                 border: 1px solid #313244;
@@ -95,7 +81,7 @@ class CodelabSidebarManager {
                 cursor: pointer;
                 transition: all 0.2s ease;
             }
-            .codelab-suggestion-chip:hover {
+            .codelab-dynamic-chip:hover {
                 background-color: #313244;
                 border-color: #89b4fa;
                 color: #ffffff;
@@ -103,18 +89,13 @@ class CodelabSidebarManager {
         `;
         document.head.appendChild(styleSheet);
 
-        // Eventos de apertura/cierre
-        menuBtn.onclick = () => this.toggleSidebar(sidebar);
+        menuBtn.onclick = () => {
+            this.toggleSidebar(sidebar);
+            if (this.isOpen) {
+                this.generarPreguntasConGroq();
+            }
+        };
         sidebar.querySelector('#codelab-sidebar-close').onclick = () => this.toggleSidebar(sidebar);
-
-        // Capturar la selección y extraer el contexto real de la conversación
-        sidebar.querySelectorAll('.codelab-suggestion-chip').forEach(btn => {
-            btn.onclick = (e) => {
-                const actionType = e.currentTarget.getAttribute('data-action');
-                this.procesarConContextoYDelegar(actionType);
-                this.toggleSidebar(sidebar);
-            };
-        });
     }
 
     toggleSidebar(sidebar) {
@@ -122,50 +103,87 @@ class CodelabSidebarManager {
         sidebar.style.left = this.isOpen ? '0' : '-320px';
     }
 
-    // Lee lo que está pasando en pantalla/conversación para pasárselo ordenado al modelo
     extraerContextoActual() {
-        // Recoge los últimos mensajes o bloques de código visibles en tu chat actual
         const burbujasChat = document.querySelectorAll('.codelab-bubble-ai, .codelab-code-content, p');
         let contextoAcumulado = "";
-
         if (burbujasChat.length > 0) {
-            // Extraemos los fragmentos recientes para que el modelo sepa de qué hablamos
-            const ultimosElementos = Array.from(burbujasChat).slice(-5);
+            const ultimosElementos = Array.from(burbujasChat).slice(-6);
             contextoAcumulado = ultimosElementos.map(el => el.innerText).join("\n");
         }
-        return contextoAcumulado.trim() || "Contexto base del proyecto Codelab.";
+        return contextoAcumulado.trim() || "Proyecto web en desarrollo.";
     }
 
-    // Construye la orden inteligente combinando la opción elegida + el contexto real de la charla
-    procesarConContextoYDelegar(actionType) {
-        const contextoChat = this.extraerContextoActual();
-        let ordenEspecifica = "";
+    // Pide a Groq que genere preguntas y sugerencias reales basadas estrictamente en el contexto
+    async generarPreguntasConGroq() {
+        const container = document.getElementById('codelab-suggestions-container');
+        container.innerHTML = `<p style="font-size: 12px; color: #a6adc8; text-align: center; margin-top: 20px;">Generando sugerencias inteligentes...</p>`;
 
-        switch(actionType) {
-            case 'cyber':
-                ordenEspecifica = `Teniendo en cuenta el siguiente contexto y código del proyecto:\n"""\n${contextoChat}\n"""\nPor favor, aplica estrictas capas de ciberseguridad, sanitización de datos y blindaje contra vulnerabilidades directamente sobre esta base.`;
-                break;
-            case 'performance':
-                ordenEspecifica = `Analizando el contexto actual del proyecto:\n"""\n${contextoChat}\n"""\nOptimiza la arquitectura, reduce acoplamientos y mejora el rendimiento general del código manteniendo la estructura limpia.`;
-                break;
-            case 'ui':
-                ordenEspecifica = `Basado en la interfaz actual descrita en el contexto:\n"""\n${contextoChat}\n"""\nDiseña e integra un nuevo componente interactivo con estilos limpios y modulares adaptados a este diseño.`;
-                break;
-        }
+        const contextoActual = this.extraerContextoActual();
 
-        // Inyecta la orden estructurada en el campo de texto del chat principal de forma limpia
-        const inputField = document.querySelector('textarea, input[type="text"]');
-        if (inputField) {
-            inputField.value = ordenEspecifica;
-            inputField.focus();
+        try {
+            const response = await fetch("/.netlify/functions/groq-proxy", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    model: "gpt-oss-20b", // Usamos el modelo ágil para sugerencias
+                    messages: [
+                        {
+                            role: "system",
+                            content: "Eres un asistente de arquitectura de software. Analiza el contexto del chat provisto y genera exactamente 3 preguntas o acciones cortas y directas que el usuario podría querer hacer a continuación para mejorar, auditar o continuar su código. Devuelve ÚNICAMENTE un array JSON plano de strings con las 3 preguntas, sin formato extra de markdown ni explicaciones."
+                        },
+                        {
+                            role: "user",
+                            content: `Contexto actual del proyecto:\n${contextoActual}`
+                        }
+                    ],
+                    temperature: 0.7,
+                    max_tokens: 300
+                })
+            });
+
+            if (!response.ok) throw new Error("Error al conectar");
+
+            const data = await response.json();
+            const textResponse = data.choices[0].message.content.trim();
             
-            // Opcional: Mostrar una notificación elegante al usuario de que el contexto fue capturado con éxito
-            console.log("[Asistente 20B]: Contexto extraído y orden canalizada hacia el núcleo 120B con éxito.");
+            // Limpiar y parsear las preguntas que devuelve Groq
+            let preguntas = [];
+            try {
+                // Intentar limpiar bloques de código si los trae
+                const jsonClean = textResponse.replace(/```json/g, '').replace(/```/g, '').trim();
+                preguntas = JSON.parse(jsonClean);
+            } catch (e) {
+                // Fallback si el modelo responde en texto plano con saltos de línea
+                preguntas = textResponse.split('\n').filter(p => p.trim().length > 5).slice(0, 3);
+            }
+
+            container.innerHTML = "";
+            if (preguntas.length === 0) {
+                container.innerHTML = `<p style="font-size: 12px; color: #a6adc8;">No hay sugerencias disponibles por ahora.</p>`;
+                return;
+            }
+
+            preguntas.forEach(pregunta => {
+                const btn = document.createElement('button');
+                btn.className = 'codelab-dynamic-chip';
+                btn.innerText = `💡 ${pregunta.replace(/^[0-9#\-\.\*]\s*/, '')}`;
+                btn.onclick = () => {
+                    const inputField = document.querySelector('textarea, input[type="text"]');
+                    if (inputField) {
+                        inputField.value = pregunta;
+                        inputField.focus();
+                    }
+                    this.toggleSidebar(document.getElementById('codelab-sidebar-panel'));
+                };
+                container.appendChild(btn);
+            });
+
+        } catch (error) {
+            container.innerHTML = `<p style="font-size: 12px; color: #f38ba8; text-align: center;">No se pudieron cargar las sugerencias en este momento. Intente de nuevo.</p>`;
         }
     }
 }
 
-// Inicializar el módulo al cargar la página
 document.addEventListener('DOMContentLoaded', () => {
-    window.codelabSidebar = new CodelabSidebarManager();
+    window.codelabSidebar = new CodelabDynamicSidebar();
 });
