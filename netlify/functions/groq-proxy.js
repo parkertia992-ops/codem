@@ -22,7 +22,10 @@ exports.handler = async (event) => {
 
     try {
         // Comprobar credenciales del servidor
-        const apiKey = process.env.GROQ_API_KEY;
+       const apiKey = (process.env.GROQ_API_KEY || "")
+    .trim()
+    .replace(/^Bearer\s+/i, "")
+    .replace(/^["']|["']$/g, "");
 
         if (!apiKey) {
             return {
