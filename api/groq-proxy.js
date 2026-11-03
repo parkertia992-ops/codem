@@ -1,55 +1,45 @@
+
 /* ==========================================================================
    CODELAB — GROQ API PROXY
+   VERCEL SERVERLESS FUNCTION
    La API Key permanece exclusivamente en el servidor.
    ========================================================================== */
 
-exports.handler = async (event) => {
-    const headers = {
-        "Content-Type": "application/json",
-        "Cache-Control": "no-store"
-    };
+module.exports = async (req, res) => {
+    res.setHeader("Content-Type", "application/json");
+    res.setHeader("Cache-Control", "no-store");
 
     // Solo aceptar POST
-    if (event.httpMethod !== "POST") {
-        return {
-            statusCode: 405,
-            headers,
-            body: JSON.stringify({
-                error: "Método no permitido."
-            })
-        };
+    if (req.method !== "POST") {
+        return res.status(405).json({
+            error: "Método no permitido."
+        });
     }
 
     try {
-        // Comprobar credenciales del servidor
-       const apiKey = (process.env.GROQ_API_KEY || "")
-    .trim()
-    .replace(/^Bearer\s+/i, "")
-    .replace(/^["']|["']$/g, "");
+        // Obtener y limpiar la API Key
+        const apiKey = (process.env.GROQ_API_KEY || "")
+            .trim()
+            .replace(/^Bearer\s+/i, "")
+            .replace(/^["']|["']$/g, "");
 
         if (!apiKey) {
-            return {
-                statusCode: 500,
-                headers,
-                body: JSON.stringify({
-                    error: "GROQ_API_KEY no está configurada en Netlify."
-                })
-            };
+            return res.status(500).json({
+                error: "GROQ_API_KEY no está configurada en Vercel."
+            });
         }
 
-        // Validar solicitud
+        // Vercel puede entregar req.body como objeto o como texto
         let body;
 
         try {
-            body = JSON.parse(event.body || "{}");
+            body = typeof req.body === "string"
+                ? JSON.parse(req.body || "{}")
+                : (req.body || {});
         } catch {
-            return {
-                statusCode: 400,
-                headers,
-                body: JSON.stringify({
-                    error: "El cuerpo de la solicitud no contiene JSON válido."
-                })
-            };
+            return res.status(400).json({
+                error: "El cuerpo de la solicitud no contiene JSON válido."
+            });
         }
 
         const {
@@ -59,14 +49,11 @@ exports.handler = async (event) => {
             temperature
         } = body;
 
+        // Validar historial
         if (!Array.isArray(messages) || messages.length === 0) {
-            return {
-                statusCode: 400,
-                headers,
-                body: JSON.stringify({
-                    error: "Debes proporcionar un historial de mensajes válido."
-                })
-            };
+            return res.status(400).json({
+                error: "Debes proporcionar un historial de mensajes válido."
+            });
         }
 
         const selectedModel = model || "openai/gpt-oss-120b";
@@ -76,12 +63,10 @@ exports.handler = async (event) => {
             "https://api.groq.com/openai/v1/chat/completions",
             {
                 method: "POST",
-
                 headers: {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${apiKey}`
                 },
-
                 body: JSON.stringify({
                     model: selectedModel,
                     messages,
@@ -109,48 +94,32 @@ exports.handler = async (event) => {
 
         // Devolver errores reales de Groq
         if (!groqResponse.ok) {
-            return {
-                statusCode: groqResponse.status,
-                headers,
-                body: JSON.stringify({
-                    error:
-                        responseData.error?.message ||
-                        "Error al comunicarse con Groq.",
-                    type: responseData.error?.type || null,
-                    code: responseData.error?.code || null
-                })
-            };
+            return res.status(groqResponse.status).json({
+                error:
+                    responseData.error?.message ||
+                    "Error al comunicarse con Groq.",
+                type: responseData.error?.type || null,
+                code: responseData.error?.code || null
+            });
         }
 
-        // Comprobar que exista una respuesta
+        // Comprobar respuesta
         if (
             !responseData.choices ||
             !responseData.choices[0]?.message
         ) {
-            return {
-                statusCode: 502,
-                headers,
-                body: JSON.stringify({
-                    error: "Groq no devolvió una respuesta utilizable."
-                })
-            };
+            return res.status(502).json({
+                error: "Groq no devolvió una respuesta utilizable."
+            });
         }
 
-        return {
-            statusCode: 200,
-            headers,
-            body: JSON.stringify(responseData)
-        };
+        return res.status(200).json(responseData);
 
     } catch (error) {
         console.error("CODELAB GROQ PROXY ERROR:", error);
 
-        return {
-            statusCode: 500,
-            headers,
-            body: JSON.stringify({
-                error: "Error interno al procesar la solicitud."
-            })
-        };
+        return res.status(500).json({
+            error: "Error interno al procesar la solicitud."
+        });
     }
 };
