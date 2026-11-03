@@ -186,7 +186,18 @@
         let chatMemory = [
             { role: "system", content: CODELAB_CONFIG.SYSTEM_PROMPT }
         ];
-
+// Conexión de memoria compartida con la IA de sugerencias.
+window.codelabGetChatMemory = () => {
+    return chatMemory
+        .filter(message =>
+            message.role === "user" ||
+            message.role === "assistant"
+        )
+        .map(message => ({
+            role: message.role,
+            content: message.content
+        }));
+};
         async function enviarMensaje() {
             const texto = inputField.value.trim();
             if (texto === "") return;
