@@ -225,12 +225,19 @@
                     })
                 });
 
-                if (!response.ok) {
-                    throw new Error("Error en la conexión con Groq. Revisa tu API Key.");
-                }
+              const data = await response.json();
 
-                const data = await response.json();
-                const respuestaGroq = data.choices[0].message.content;
+if (!response.ok) {
+    throw new Error(
+        data.error || `Error HTTP ${response.status}`
+    );
+}
+
+const respuestaGroq = data.choices?.[0]?.message?.content;
+
+if (typeof respuestaGroq !== "string") {
+    throw new Error("Groq no devolvió contenido válido.");
+} 
 
                 // Parseamos primero el markdown general
                 let parsedHTML = marked.parse(respuestaGroq);
