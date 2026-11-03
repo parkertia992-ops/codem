@@ -308,10 +308,11 @@ if (typeof respuestaGroq !== "string") {
 
         sendButton.addEventListener('click', enviarMensaje);
         inputField.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                enviarMensaje();
-            }
-        });
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        enviarMensaje();
+    }
+});
     </script>
 
 </body>
