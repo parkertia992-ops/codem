@@ -1,0 +1,58 @@
+/* ========================================================================== */
+/* ARCHIVO: code-blocks.css (Actualizado para mayor orden)                    */
+/* ========================================================================== */
+
+/* Contenedor principal de la burbuja de código */
+.codelab-code-block-wrapper {
+    background-color: #181825;
+    border: 1px solid #313244;
+    border-radius: 12px;
+    margin: 16px 0;
+    overflow: hidden;
+    width: 100%;
+    max-width: 650px; /* Evita que el bloque se estire demasiado a lo ancho */
+    align-self: flex-start; /* Lo alinea de lado izquierdo como respuesta de la IA */
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* Barra superior del bloque (donde va el lenguaje y el botón de copiar) */
+.codelab-code-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #11111b;
+    padding: 6px 12px;
+    font-size: 12px;
+    color: #a6adc8;
+    border-bottom: 1px solid #313244;
+}
+
+/* Botón de copiar estético */
+.codelab-copy-btn {
+    background-color: #313244;
+    color: #cdd6f4;
+    border: none;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.codelab-copy-btn:hover {
+    background-color: #45475a;
+    color: #ffffff;
+}
+
+/* El área del código real que respeta los saltos de línea exactos */
+.codelab-code-content {
+    padding: 12px;
+    margin: 0;
+    overflow-x: auto;
+    font-family: 'Fira Code', Consolas, Monaco, 'Andale Mono', monospace;
+    font-size: 13px;
+    color: #cdd6f4;
+    line-height: 1.5;
+    white-space: pre;
+    word-wrap: normal;
+}

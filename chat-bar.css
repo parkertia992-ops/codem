@@ -1,0 +1,80 @@
+/* ========================================================================== */
+/* ARCHIVO: chat-bar.css                                                     */
+/* DESCRIPCIÓN: Estilos para la barra de búsqueda/chat inferior de Codelab.   */
+/* ========================================================================== */
+
+/* Contenedor principal que fija la barra en la parte inferior de la pantalla */
+.codelab-chat-bar-container {
+    position: fixed;
+    bottom: 24px; /* Distancia desde el borde inferior de la pantalla */
+    left: 50%;
+    transform: translateX(-50%); /* Centra perfectamente el contenedor de forma horizontal */
+    width: 100%;
+    max-width: 750px; /* Ancho máximo de la barra (cámbialo si la quieres más ancha o angosta) */
+    padding: 0 16px; /* Margen de seguridad a los lados para pantallas pequeñas */
+    box-sizing: border-box;
+    z-index: 1000; /* Asegura que la barra flote por encima de cualquier otro elemento */
+}
+
+/* Estructura interna de la barra (el "input box" completo) */
+.codelab-chat-input-wrapper {
+    display: flex;
+    align-items: center;
+    background-color: #040407; /* Color de fondo oscuro (puedes adaptarlo a tu tema) */
+    border: 1px solid #07070a; /* Color del borde sutil */
+    border-radius: 16px; /* Redondeo de las esquinas de la barra */
+    padding: 8px 12px; /* Espaciado interno (alto y ancho del padding) */
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3); /* Sombra flotante para darle profundidad */
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Efecto visual cuando haces clic o escribes dentro de la barra */
+.codelab-chat-input-wrapper:focus-within {
+    border-color: #89b4fa; /* Color del borde al seleccionarse */
+    box-shadow: 0 8px 24px rgba(137, 180, 250, 0.15); /* Sombra con destello de color */
+}
+
+/* El campo de texto real (donde el usuario escribe la pregunta) */
+.codelab-chat-input {
+    flex: 1; /* Hace que el input ocupe todo el espacio disponible a lo largo */
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #cdd6f4; /* Color del texto que escribe el usuario */
+    font-size: 15px; /* Tamaño de la letra */
+    font-family: inherit;
+    padding: 6px 8px;
+    resize: none; /* Evita que se deforme si usas un textarea */
+}
+
+/* Texto de guía dentro de la barra (Placeholder) */
+.codelab-chat-input::placeholder {
+    color: #6c7086; /* Color grisáceo para que no desentone */
+}
+
+/* Botón de enviar (la flechita o ícono a la derecha) */
+.codelab-chat-send-btn {
+    background-color: #000000; /* Color de fondo del botón de enviar */
+    color: #ffffff; /* Color del ícono/texto dentro del botón */
+    border: none;
+    border-radius: 10px; /* Redondeo del botón */
+    width: 38px; /* Ancho del botón */
+    height: 38px; /* Alto del botón */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    flex-shrink: 0;
+    margin-left: 8px; /* Espacio entre el campo de texto y el botón */
+}
+
+/* Efecto al pasar el ratón por encima del botón */
+.codelab-chat-send-btn:hover {
+    background-color: #b4befe; /* Un tono más claro al hacer hover */
+}
+
+/* Efecto al hacer clic en el botón */
+.codelab-chat-send-btn:active {
+    transform: scale(0.95); /* Efecto de presión hacia adentro */
+}

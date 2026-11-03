@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Codelab - IA Chat</title>
+    
+    <style>
+        /* ========================================================================== */
+        /* NUEVOS ESTILOS: Burbujas de chat y área de mensajes                        */
+        /* ========================================================================== */
+        .codelab-chat-history {
+            position: absolute;
+            top: 20px;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 750px;
+            padding: 0 16px;
+            box-sizing: border-box;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            scroll-behavior: smooth;
+        }
+
+        /* Tu pregunta en una nubecita/burbuja */
+        .codelab-bubble-user {
+            background-color: #000000;
+            color: #ffffff;
+            padding: 12px 16px;
+            border-radius: 16px 16px 4px 16px;
+            align-self: flex-end;
+            max-width: 80%;
+            word-break: break-word;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        /* Burbuja general para los textos y explicaciones de la IA */
+        .codelab-bubble-ai {
+            background-color: #f8f8ff; /* Fondo sutil para agrupar el texto de la IA */
+            border: 1px solid #ffffff;
+            color: #000000;
+            padding: 12px 16px;
+            border-radius: 16px 16px 16px 4px;
+            align-self: flex-start;
+            max-width: 85%;
+            word-break: break-word;
+            font-size: 14px;
+            line-height: 1.5;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        /* ========================================================================== */
+        /* ESTILOS GENERALES DE LA PÁGINA                                             */
+        /* ========================================================================== */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #fafafa;
+            color: #cdd6f4;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* ========================================================================== */
+        /* ESTILOS DE LA BARRA INFERIOR (chat-bar.css)                                */
+        /* ========================================================================== */
+
+        /* Contenedor principal que fija la barra en la parte inferior */
+        .codelab-chat-bar-container {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 750px;
+            padding: 0 16px;
+            box-sizing: border-box;
+            z-index: 1000;
+        }
+
+        /* Estructura interna de la barra */
+        .codelab-chat-input-wrapper {
+            display: flex;
+            align-items: center;
+            background-color: #ffffff;
+            border: 1px solid #313244;
+            border-radius: 16px;
+            padding: 8px 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        /* Efecto visual al enfocar la barra */
+        .codelab-chat-input-wrapper:focus-within {
+            border-color: #89b4fa;
+            box-shadow: 0 8px 24px rgba(32, 38, 46, 0.15);
+        }
+
+        /* Campo de texto */
+        .codelab-chat-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #020202;
+            font-size: 15px;
+            font-family: inherit;
+            padding: 6px 8px;
+            resize: none;
+        }
+
+        /* Placeholder */
+        .codelab-chat-input::placeholder {
+            color: #f5f5f5;
+        }
+
+        /* Botón de envío */
+        .codelab-chat-send-btn {
+            background-color: #000000;
+            color: #ffffff;
+            border: none;
+            border-radius: 10px;
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            flex-shrink: 0;
+            margin-left: 8px;
+        }
+
+        .codelab-chat-send-btn:hover {
+            background-color: #000000;
+        }
+
+        .codelab-chat-send-btn:active {
+            transform: scale(0.95);
+        }
+        
+    </style>
+    <link rel="stylesheet" href="./code-blocks.css">
+    <!-- Librería ligera para renderizar Markdown (negritas y cursivas) desde la nube -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+<div id="codelabHistory" class="codelab-chat-history"></div>
+    
+
+    <!-- BARRA DE BÚSQUEDA -->
+    <div class="codelab-chat-bar-container">
+        <div class="codelab-chat-input-wrapper">
+            <input 
+                type="text" 
+                id="codelabInput" 
+                class="codelab-chat-input" 
+                placeholder="Pregúntale a la IA sobre tu código..."
+                autocomplete="off"
+            >
+            <button id="codelabSendBtn" class="codelab-chat-send-btn" title="Enviar pregunta">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="19" x2="12" y2="5"></line>
+                    <polyline points="5 12 12 5 19 12"></polyline>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+     <!-- Enlazamos el archivo de configuración primero -->
+    <script src="./config.js"></script>
+    <script>
+        const inputField = document.getElementById('codelabInput');
+        const sendButton = document.getElementById('codelabSendBtn');
+        const historyContainer = document.getElementById('codelabHistory');
+
+        // Historial de mensajes para mantener contexto con Groq
+        let chatMemory = [
+            { role: "system", content: CODELAB_CONFIG.SYSTEM_PROMPT }
+        ];
+
+        async function enviarMensaje() {
+            const texto = inputField.value.trim();
+            if (texto === "") return;
+
+            // 1. Añade tu pregunta a la pantalla en una nubecita
+            const userBubble = document.createElement('div');
+            userBubble.className = 'codelab-bubble-user';
+            userBubble.textContent = texto;
+            historyContainer.appendChild(userBubble);
+
+            // Limpia el input y baja el scroll
+            inputField.value = "";
+            historyContainer.scrollTop = historyContainer.scrollHeight;
+
+            // Añade al historial de la IA
+            chatMemory.push({ role: "user", content: texto });
+
+            // 2. Prepara la burbuja de la respuesta de Groq (vacía al inicio)
+            const aiBubble = document.createElement('div');
+            aiBubble.className = 'codelab-bubble-ai';
+            aiBubble.textContent = "Pensando...";
+            historyContainer.appendChild(aiBubble);
+            historyContainer.scrollTop = historyContainer.scrollHeight;
+
+            try {
+                // Petición segura a través de la función serverless de Netlify (sin exponer la API Key)
+                const response = await fetch("/.netlify/functions/groq-proxy", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        model: CODELAB_CONFIG.MODEL_NAME,
+                        messages: chatMemory,
+                        temperature: 0.7,
+                        max_tokens: CODELAB_CONFIG.MAX_TOKENS
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error("Error en la conexión con Groq. Revisa tu API Key.");
+                }
+
+                const data = await response.json();
+                const respuestaGroq = data.choices[0].message.content;
+
+                // Parseamos primero el markdown general
+                let parsedHTML = marked.parse(respuestaGroq);
+                aiBubble.innerHTML = parsedHTML;
+
+                // Buscamos todos los bloques de código (<pre><code>) generados para inyectarles la cabecera y el botón de copiar
+                aiBubble.querySelectorAll('pre').forEach((preBlock) => {
+                    const codeElement = preBlock.querySelector('code');
+                    if (!codeElement) return;
+
+                    const rawCodeText = codeElement.textContent;
+
+                    // Creamos el contenedor envolvente del bloque de código
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'codelab-code-block-wrapper';
+
+                    // Creamos la barra superior
+                    const header = document.createElement('div');
+                    header.className = 'codelab-code-header';
+                    header.innerHTML = '<span>código</span>';
+
+                    // Creamos el botón de copiar
+                    const copyBtn = document.createElement('button');
+                    copyBtn.className = 'codelab-copy-btn';
+                    copyBtn.textContent = 'Copiar';
+                    
+                    copyBtn.addEventListener('click', () => {
+                        navigator.clipboard.writeText(rawCodeText).then(() => {
+                            copyBtn.textContent = '¡Copiado!';
+                            setTimeout(() => { copyBtn.textContent = 'Copiar'; }, 2000);
+                        });
+                    });
+
+                    header.appendChild(copyBtn);
+
+                    // Estilizamos el contenido para que respete los saltos de línea exactos
+                    codeElement.className = 'codelab-code-content';
+                    
+                    // Reorganizamos la estructura en el DOM
+                    preBlock.parentNode.insertBefore(wrapper, preBlock);
+                    wrapper.appendChild(header);
+                    wrapper.appendChild(preBlock);
+                });
+                
+                // Guarda la respuesta en la memoria del chat
+                chatMemory.push({ role: "assistant", content: respuestaGroq });
+
+            } catch (error) {
+                aiBubble.textContent = "Hubo un error al conectar con Groq: " + error.message;
+            }
+
+            historyContainer.scrollTop = historyContainer.scrollHeight;
+        }
+
+        sendButton.addEventListener('click', enviarMensaje);
+        inputField.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                enviarMensaje();
+            }
+        });
+    </script>
+
+</body>
+</html>
