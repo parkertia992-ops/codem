@@ -542,31 +542,6 @@ return true;
     }
   });
 
- folderInput.addEventListener("change", () => {
-  const selected = Array.from(folderInput.files || []);
-  folderInput.value = "";
-
-  if (!selected.length) {
-    showStatus("La carpeta no contiene archivos accesibles.", "error");
-    return;
-  }
-
-  const firstPath = selected[0].webkitRelativePath || selected[0].name;
-  const folderName = firstPath.split("/")[0] || "Proyecto";
-
-  const filesWithPaths = selected.map(file => {
-    const relativePath = file.webkitRelativePath || file.name;
-
-    Object.defineProperty(file, "codelabRelativePath", {
-      value: relativePath,
-      configurable: true
-    });
-
-    return file;
-  });
-
-  addFiles(filesWithPaths, folderName);
-});
 let bypassSendInterception = false;
   function injectProjectContext() {
     if (!state.analysis || state.analyzing) return false;
