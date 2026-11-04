@@ -34,18 +34,28 @@
     box-shadow: 0 8px 24px rgba(137, 180, 250, 0.15); /* Sombra con destello de color */
 }
 
-/* El campo de texto real (donde el usuario escribe la pregunta) */
+/* Input de texto de la barra de chat */
 .codelab-chat-input {
-    flex: 1; /* Hace que el input ocupe todo el espacio disponible a lo largo */
+    flex: 1;
     background: transparent;
     border: none;
     outline: none;
-    color: #cdd6f4; /* Color del texto que escribe el usuario */
-    font-size: 15px; /* Tamaño de la letra */
+    color: #cdd6f4;
+    font-size: 15px;
     font-family: inherit;
     padding: 6px 8px;
-    resize: none; /* Evita que se deforme si usas un textarea */
+    resize: none;
+
+    /* Propiedades del bloque eliminado */
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: normal;
+    min-height: 38px;
+    max-height: 240px;
+    overflow-y: auto;
+    box-sizing: border-box;
 }
+
 
 /* Texto de guía dentro de la barra (Placeholder) */
 .codelab-chat-input {
