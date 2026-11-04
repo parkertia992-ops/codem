@@ -84,21 +84,15 @@ if (safeMessages.length === 0) {
     });
 }
 
-      
-
-        
-
-        // Solicitud privada a Groq
-        const groqResponse = await fetch(
-           // Inspección de seguridad independiente
+      // Inspección de seguridad independiente
 const securityResult = await inspectPrompt(
     safeMessages,
     apiKey
 );
 
 if (!securityResult.safe) {
-    const blocked = securityResult.reason ===
-        "PROMPT_INJECTION_DETECTED";
+    const blocked =
+        securityResult.reason === "PROMPT_INJECTION_DETECTED";
 
     return res.status(blocked ? 403 : 503).json({
         error: blocked
@@ -107,6 +101,10 @@ if (!securityResult.safe) {
         code: securityResult.reason
     });
 }
+
+        
+
+        
             "https://api.groq.com/openai/v1/chat/completions",
             {
                 method: "POST",
