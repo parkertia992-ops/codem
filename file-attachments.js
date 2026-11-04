@@ -231,67 +231,80 @@
     return state.zipPromise;
   }
 
-  async function extractZip(zipFile) {
-    showStatus(`Extrayendo ${zipFile.name}...`);
 
-    const JSZip = await loadZipLibrary();
-    const zip = await JSZip.loadAsync(zipFile);
+async function extractZip(zipFile) {
+  showStatus(`Extrayendo el contenido de ${zipFile.name}...`);
 
-    const extracted = [];
+  const JSZip = await loadZipLibrary();
+  const zip = await JSZip.loadAsync(zipFile);
 
-    for (const [path, entry] of Object.entries(zip.files)) {
-      if (entry.dir) continue;
+  const extracted = [];
 
-      if (path.split("/").some(part =>
-        part === "node_modules" ||
-        part === ".git" ||
-        part === "dist" ||
-        part === "build" ||
-        part === ".next"
-      )) {
-        continue;
+  const ignoredDirectories = new Set([
+    "node_modules",
+    ".git",
+    "dist",
+    "build",
+    ".next",
+    "coverage",
+    ".vercel"
+  ]);
+
+  for (const [path, entry] of Object.entries(zip.files)) {
+    if (entry.dir) continue;
+
+    const normalizedPath = path.replace(/\\/g, "/");
+    const segments = normalizedPath.split("/").filter(Boolean);
+
+    if (segments.some(segment => ignoredDirectories.has(segment))) {
+      continue;
+    }
+
+    const extension = getExtension(normalizedPath);
+
+    const imageTypes = {
+      png: "image/png",
+      jpg: "image/jpeg",
+      jpeg: "image/jpeg",
+      webp: "image/webp",
+      gif: "image/gif"
+    };
+
+    if (!TEXT_EXTENSIONS.has(extension) && !imageTypes[extension]) {
+      continue;
+    }
+
+    const blob = await entry.async("blob");
+
+    const file = new File(
+      [blob],
+      segments[segments.length - 1],
+      {
+        type: blob.type || imageTypes[extension] || "text/plain"
       }
+    );
 
-      const extension = getExtension(path);
+    Object.defineProperty(file, "webkitRelativePath", {
+      value: normalizedPath
+    });
 
-const imageTypes = {
-  png: "image/png",
-  jpg: "image/jpeg",
-  jpeg: "image/jpeg",
-  webp: "image/webp",
-  gif: "image/gif"
-};
+    extracted.push(file);
 
-if (!TEXT_EXTENSIONS.has(extension) && !imageTypes[extension]) {
-  continue;
+    if (extracted.length >= CONFIG.maxFiles) {
+      showStatus(
+        `Se alcanzó el límite de ${CONFIG.maxFiles} archivos del ZIP.`,
+        "info"
+      );
+      break;
+    }
+  }
+
+  if (extracted.length === 0) {
+    throw new Error("La carpeta comprimida no contiene archivos compatibles.");
+  }
+
+  return extracted;
 }
-
-const blob = await entry.async("blob");
-
-const file = new File(
-  [blob],
-  path.split("/").pop(),
-  {
-    type: blob.type || imageTypes[extension] || "text/plain"
-  }
-);
-
-      Object.defineProperty(file, "webkitRelativePath", {
-        value: path
-      });
-
-      extracted.push(file);
-
-      if (extracted.length >= CONFIG.maxFiles) break;
-    }
-
-    if (extracted.length === 0) {
-      throw new Error("El ZIP no contiene archivos compatibles.");
-    }
-
-    return extracted;
-  }
-
   async function readAsDataURL(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
