@@ -1,249 +1,528 @@
-"use strict";
-
 (() => {
-    const SUPPORTED_EXTENSIONS = new Set([
-        "js", "jsx", "ts", "tsx",
-        "html", "css", "scss",
-        "json", "md", "txt",
-        "py", "java", "php",
-        "sql", "xml", "yaml", "yml",
-        "vue", "svelte", "sh",
-        "env.example"
-    ]);
+  "use strict";
 
-    const MAX_FILES = 80;
-    const MAX_FILE_SIZE = 200000;
-    const MAX_TOTAL_SIZE = 1200000;
+  const CONFIG = {
+    endpoint: "/api/file-analyzer",
+    maxFiles: 100,
+    maxFileSize: 5 * 1024 * 1024,
+    maxTotalSize: 20 * 1024 * 1024,
+    maxImages: 3,
+    zipLibrary: "https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"
+  };
 
-    let selectedFiles = [];
-    let projectAnalysis = "";
-    let isAnalyzing = false;
+  const TEXT_EXTENSIONS = new Set([
+    "js", "jsx", "ts", "tsx", "mjs", "cjs",
+    "html", "htm", "css", "scss", "sass",
+    "json", "jsonc", "md", "mdx", "txt",
+    "py", "java", "c", "cpp", "h", "hpp",
+    "cs", "go", "rs", "php", "rb", "swift",
+    "kt", "dart", "vue", "svelte", "astro",
+    "sql", "sh", "bat", "ps1", "yml", "yaml",
+    "toml", "xml", "svg", "env", "gitignore",
+    "dockerfile", "prisma", "graphql", "gql"
+  ]);
 
-    function getExtension(name) {
-        return name.toLowerCase().split(".").pop();
+  const state = {
+    files: [],
+    analysis: "",
+    analyzing: false,
+    zipPromise: null
+  };
+
+  const inputField = document.getElementById("codelabInput");
+  const sendButton = document.getElementById("codelabSendBtn");
+  const wrapper = document.querySelector(".codelab-chat-input-wrapper");
+  const container = document.querySelector(".codelab-chat-bar-container");
+
+  if (!inputField || !sendButton || !wrapper || !container) {
+    console.error("Codelab Attachments: no se encontraron los elementos del chat.");
+    return;
+  }
+
+  const fileInput = document.createElement("input");
+  fileInput.type = "file";
+  fileInput.multiple = true;
+  fileInput.accept = "*/*";
+  fileInput.hidden = true;
+
+  const folderInput = document.createElement("input");
+  folderInput.type = "file";
+  folderInput.multiple = true;
+  folderInput.setAttribute("webkitdirectory", "");
+  folderInput.setAttribute("directory", "");
+  folderInput.hidden = true;
+
+  document.body.append(fileInput, folderInput);
+
+  const attachButton = document.createElement("button");
+  attachButton.type = "button";
+  attachButton.className = "codelab-attach-button";
+  attachButton.setAttribute("aria-label", "Adjuntar archivos");
+  attachButton.title = "Adjuntar archivos, carpetas o ZIP";
+  attachButton.innerHTML = `
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M21.44 11.05 12.25 20.24a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.82-2.82l8.49-8.49"/>
+    </svg>
+  `;
+
+  const menu = document.createElement("div");
+  menu.className = "codelab-attach-menu";
+  menu.hidden = true;
+  menu.innerHTML = `
+    <button type="button" data-action="files">
+      <span>＋</span> Seleccionar archivos
+    </button>
+    <button type="button" data-action="folder">
+      <span>▧</span> Seleccionar carpeta
+    </button>
+    <button type="button" data-action="zip">
+      <span>▤</span> Seleccionar ZIP
+    </button>
+  `;
+
+  const attachments = document.createElement("div");
+  attachments.className = "codelab-attachments";
+  attachments.setAttribute("aria-live", "polite");
+
+  const status = document.createElement("div");
+  status.className = "codelab-attachment-status";
+  status.hidden = true;
+
+  wrapper.insertBefore(attachButton, inputField);
+  container.insertBefore(menu, wrapper);
+  container.insertBefore(attachments, wrapper);
+  container.appendChild(status);
+
+  function getExtension(name) {
+    const parts = String(name).toLowerCase().split(".");
+    return parts.length > 1 ? parts.pop() : "";
+  }
+
+  function isImage(file) {
+    return /^image\/(png|jpeg|jpg|webp|gif)$/i.test(file.type || "");
+  }
+
+  function isTextFile(file) {
+    const extension = getExtension(file.name);
+
+    return TEXT_EXTENSIONS.has(extension) ||
+      file.type.startsWith("text/") ||
+      file.type === "application/json";
+  }
+
+  function showStatus(message, type = "info") {
+    status.hidden = false;
+    status.textContent = message;
+    status.dataset.type = type;
+  }
+
+  function hideStatus() {
+    status.hidden = true;
+    status.textContent = "";
+  }
+
+  function renderAttachments() {
+    attachments.replaceChildren();
+
+    if (state.files.length === 0) {
+      attachments.hidden = true;
+      return;
     }
 
-    function isSupported(file) {
-        return SUPPORTED_EXTENSIONS.has(getExtension(file.name));
+    attachments.hidden = false;
+
+    for (const item of state.files) {
+      const chip = document.createElement("div");
+      chip.className = "codelab-attachment-chip";
+
+      const name = document.createElement("span");
+      name.className = "codelab-attachment-name";
+      name.textContent = item.name;
+      name.title = item.name;
+
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "codelab-attachment-remove";
+      remove.textContent = "×";
+      remove.setAttribute("aria-label", `Eliminar ${item.name}`);
+
+      remove.addEventListener("click", () => {
+        state.files = state.files.filter(file => file.id !== item.id);
+        analyzeProject();
+      });
+
+      chip.append(name, remove);
+      attachments.appendChild(chip);
+    }
+  }
+
+  function calculateTotalSize(files) {
+    return files.reduce((total, file) => total + (file.size || 0), 0);
+  }
+
+  function addFiles(newFiles) {
+    const existing = new Set(
+      state.files.map(file => `${file.path}:${file.size}`)
+    );
+
+    for (const file of newFiles) {
+      if (state.files.length >= CONFIG.maxFiles) {
+        showStatus(`Máximo ${CONFIG.maxFiles} archivos por proyecto.`, "error");
+        break;
+      }
+
+      const path = file.webkitRelativePath || file.name;
+      const key = `${path}:${file.size}`;
+
+      if (existing.has(key)) continue;
+
+      if (file.size > CONFIG.maxFileSize) {
+        showStatus(`${file.name}: supera el límite de 5 MB.`, "error");
+        continue;
+      }
+
+      const newTotal = calculateTotalSize(state.files) + file.size;
+
+      if (newTotal > CONFIG.maxTotalSize) {
+        showStatus("El proyecto supera el límite total de 20 MB.", "error");
+        break;
+      }
+
+      state.files.push({
+        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        file,
+        name: path,
+        size: file.size,
+        path
+      });
+
+      existing.add(key);
     }
 
-    function createInterface() {
-        const wrapper = document.querySelector(
-            ".codelab-chat-input-wrapper"
-        );
+    renderAttachments();
+    analyzeProject();
+  }
 
-        if (!wrapper || document.getElementById("codelabFilesButton")) {
-            return;
+  function loadZipLibrary() {
+    if (window.JSZip) return Promise.resolve(window.JSZip);
+
+    if (state.zipPromise) return state.zipPromise;
+
+    state.zipPromise = new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = CONFIG.zipLibrary;
+      script.async = true;
+
+      script.onload = () => {
+        if (window.JSZip) resolve(window.JSZip);
+        else reject(new Error("No se pudo cargar JSZip."));
+      };
+
+      script.onerror = () => reject(
+        new Error("No se pudo cargar el lector ZIP.")
+      );
+
+      document.head.appendChild(script);
+    });
+
+    return state.zipPromise;
+  }
+
+  async function extractZip(zipFile) {
+    showStatus(`Extrayendo ${zipFile.name}...`);
+
+    const JSZip = await loadZipLibrary();
+    const zip = await JSZip.loadAsync(zipFile);
+
+    const extracted = [];
+
+    for (const [path, entry] of Object.entries(zip.files)) {
+      if (entry.dir) continue;
+
+      if (path.split("/").some(part =>
+        part === "node_modules" ||
+        part === ".git" ||
+        part === "dist" ||
+        part === "build" ||
+        part === ".next"
+      )) {
+        continue;
+      }
+
+      const extension = getExtension(path);
+
+      if (!TEXT_EXTENSIONS.has(extension) &&
+          !/^image\/(png|jpeg|jpg|webp|gif)$/i.test(extension)) {
+        continue;
+      }
+
+      const blob = await entry.async("blob");
+
+      const file = new File(
+        [blob],
+        path.split("/").pop(),
+        { type: blob.type || "" }
+      );
+
+      Object.defineProperty(file, "webkitRelativePath", {
+        value: path
+      });
+
+      extracted.push(file);
+
+      if (extracted.length >= CONFIG.maxFiles) break;
+    }
+
+    if (extracted.length === 0) {
+      throw new Error("El ZIP no contiene archivos compatibles.");
+    }
+
+    return extracted;
+  }
+
+  async function readAsDataURL(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(
+        new Error(`No se pudo leer la imagen ${file.name}.`)
+      );
+
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function readAsText(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = () => reject(
+        new Error(`No se pudo leer ${file.name}.`)
+      );
+
+      reader.readAsText(file);
+    });
+  }
+
+  async function prepareFiles() {
+    const prepared = [];
+    let imageCount = 0;
+
+    for (const item of state.files) {
+      const file = item.file;
+
+      if (isImage(file)) {
+        imageCount++;
+
+        if (imageCount > CONFIG.maxImages) {
+          showStatus(
+            `Solo se analizarán las primeras ${CONFIG.maxImages} imágenes.`,
+            "info"
+          );
+          continue;
         }
 
-        const button = document.createElement("button");
-        button.id = "codelabFilesButton";
-        button.type = "button";
-        button.className = "codelab-files-button";
-        button.textContent = "Adjuntar proyecto";
-        button.title = "Seleccionar archivos del proyecto";
-
-        const input = document.createElement("input");
-        input.id = "codelabFilesInput";
-        input.type = "file";
-        input.multiple = true;
-        input.webkitdirectory = true;
-        input.hidden = true;
-
-        const status = document.createElement("div");
-        status.id = "codelabFilesStatus";
-        status.className = "codelab-files-status";
-
-        wrapper.insertBefore(button, wrapper.firstChild);
-        wrapper.appendChild(input);
-
-        const container = document.querySelector(
-            ".codelab-chat-bar-container"
-        );
-
-        container.appendChild(status);
-
-        button.addEventListener("click", () => {
-            input.click();
+        prepared.push({
+          name: item.path,
+          type: file.type,
+          dataUrl: await readAsDataURL(file)
         });
 
-        input.addEventListener("change", async () => {
-            await processFiles(Array.from(input.files || []));
-            input.value = "";
+      } else if (isTextFile(file)) {
+        prepared.push({
+          name: item.path,
+          type: file.type,
+          content: await readAsText(file)
         });
+      }
     }
 
-    function showStatus(message, type = "") {
-        const status = document.getElementById(
-            "codelabFilesStatus"
-        );
+    return prepared;
+  }
 
-        if (!status) return;
+  async function analyzeProject() {
+    state.analysis = "";
 
-        status.textContent = message;
-        status.dataset.state = type;
+    if (state.files.length === 0) {
+      state.analyzing = false;
+      hideStatus();
+      renderAttachments();
+      return;
     }
 
-    async function processFiles(files) {
-        if (!files.length) return;
+    state.analyzing = true;
+    renderAttachments();
+    showStatus("Preparando archivos para Qwen...");
 
-        if (files.length > MAX_FILES) {
-            showStatus(`Máximo ${MAX_FILES} archivos.`);
-            return;
-        }
+    try {
+      const files = await prepareFiles();
 
-        const validFiles = files.filter(isSupported);
+      if (files.length === 0) {
+        throw new Error("No hay archivos compatibles para analizar.");
+      }
 
-        if (!validFiles.length) {
-            showStatus("No se encontraron archivos compatibles.");
-            return;
-        }
+      showStatus("Qwen 3.8 27B está analizando el proyecto...");
 
-        let totalSize = 0;
+      const response = await fetch(CONFIG.endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ files })
+      });
 
-        for (const file of validFiles) {
-            if (file.size > MAX_FILE_SIZE) {
-                showStatus(
-                    `${file.name} supera el límite de tamaño.`
-                );
-                return;
-            }
+      const result = await response.json();
 
-            totalSize += file.size;
-        }
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "Falló el análisis del proyecto.");
+      }
 
-        if (totalSize > MAX_TOTAL_SIZE) {
-            showStatus("El proyecto supera el tamaño permitido.");
-            return;
-        }
+      state.analysis = result.analysis;
+      state.analyzing = false;
 
-        selectedFiles = validFiles;
+      showStatus(
+        `Análisis completado: ${result.filesAnalyzed} archivos procesados` +
+        (result.filesIgnored ? ` · ${result.filesIgnored} ignorados` : ""),
+        "success"
+      );
 
-        projectAnalysis = "";
-        isAnalyzing = true;
+    } catch (error) {
+      state.analysis = "";
+      state.analyzing = false;
+      showStatus(error.message || "No se pudo analizar el proyecto.", "error");
+      console.error("Codelab attachment analysis:", error);
+    }
+  }
 
-        showStatus(
-            `Leyendo ${validFiles.length} archivos...`,
-            "loading"
-        );
+  function openMenu() {
+    menu.hidden = !menu.hidden;
+  }
 
-        try {
-            const contents = await Promise.all(
-                validFiles.map(async file => ({
-                    name: file.webkitRelativePath || file.name,
-                    content: await file.text()
-                }))
-            );
+  attachButton.addEventListener("click", openMenu);
 
-            showStatus("Qwen está analizando el proyecto...", "loading");
+  menu.addEventListener("click", event => {
+    const button = event.target.closest("[data-action]");
+    if (!button) return;
 
-            const response = await fetch("/api/file-analyzer", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    files: contents
-                })
-            });
+    menu.hidden = true;
 
-            const data = await response.json();
-
-            if (!response.ok || !data.success) {
-                throw new Error(
-                    data.error || "No se pudo analizar el proyecto."
-                );
-            }
-
-            projectAnalysis = data.analysis;
-
-            showStatus(
-                `${data.files.length} archivos analizados correctamente.`,
-                "success"
-            );
-
-        } catch (error) {
-            projectAnalysis = "";
-
-            showStatus(
-                error.message || "Error al analizar los archivos.",
-                "error"
-            );
-
-        } finally {
-            isAnalyzing = false;
-        }
+    if (button.dataset.action === "files") {
+      fileInput.click();
     }
 
-    function attachAnalysisToMessage() {
-        const input = document.getElementById("codelabInput");
-
-        if (!input || !projectAnalysis || isAnalyzing) {
-            return;
-        }
-
-        if (input.dataset.analysisAttached === "true") {
-            return;
-        }
-
-        const originalMessage = input.value.trim();
-
-        if (!originalMessage) return;
-
-        input.value = `
-CONTEXTO DEL PROYECTO ANALIZADO POR QWEN 3.8 27B:
-
-${projectAnalysis}
-
-SOLICITUD DEL USUARIO:
-
-${originalMessage}
-        `.trim();
-
-        input.dataset.analysisAttached = "true";
-
-        queueMicrotask(() => {
-            input.dataset.analysisAttached = "false";
-        });
+    if (button.dataset.action === "folder") {
+      folderInput.click();
     }
 
-    function connectToChat() {
-        const sendButton = document.getElementById("codelabSendBtn");
-        const input = document.getElementById("codelabInput");
+    if (button.dataset.action === "zip") {
+      fileInput.accept = ".zip,application/zip,application/x-zip-compressed";
+      fileInput.click();
+    }
+  });
 
-        if (!sendButton || !input) return;
+  document.addEventListener("click", event => {
+    if (!menu.contains(event.target) && !attachButton.contains(event.target)) {
+      menu.hidden = true;
+    }
+  });
 
-        sendButton.addEventListener(
-            "click",
-            attachAnalysisToMessage,
-            true
-        );
+  fileInput.addEventListener("change", async () => {
+    const selected = Array.from(fileInput.files || []);
+    fileInput.value = "";
 
-        input.addEventListener(
-            "keydown",
-            event => {
-                if (event.key === "Enter" && !event.shiftKey) {
-                    attachAnalysisToMessage();
-                }
-            },
-            true
-        );
+    const zipFiles = selected.filter(file =>
+      getExtension(file.name) === "zip"
+    );
+
+    const normalFiles = selected.filter(file =>
+      getExtension(file.name) !== "zip"
+    );
+
+    try {
+      if (normalFiles.length) addFiles(normalFiles);
+
+      for (const zipFile of zipFiles) {
+        const extracted = await extractZip(zipFile);
+        addFiles(extracted);
+      }
+    } catch (error) {
+      showStatus(error.message, "error");
+    } finally {
+      fileInput.accept = "*/*";
+    }
+  });
+
+  folderInput.addEventListener("change", () => {
+    const selected = Array.from(folderInput.files || []);
+    folderInput.value = "";
+
+    if (selected.length) addFiles(selected);
+  });
+
+  function injectProjectContext() {
+    if (!state.analysis || state.analyzing) return false;
+
+    const userMessage = inputField.value.trim();
+
+    if (!userMessage) return false;
+
+    if (inputField.dataset.projectContextInjected === "true") {
+      return true;
     }
 
-    function initialize() {
-        createInterface();
-        connectToChat();
+    inputField.value =
+      `${userMessage}\n\n` +
+      `--- CONTEXTO DEL PROYECTO ANALIZADO POR QWEN ---\n` +
+      `${state.analysis}\n` +
+      `--- FIN DEL CONTEXTO DEL PROYECTO ---`;
+
+    inputField.dataset.projectContextInjected = "true";
+
+    queueMicrotask(() => {
+      inputField.dataset.projectContextInjected = "false";
+    });
+
+    return true;
+  }
+
+  document.addEventListener("click", event => {
+    if (event.target.closest("#codelabSendBtn")) {
+      if (state.analyzing) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        showStatus("Espera a que termine el análisis de los archivos.", "info");
+        return;
+      }
+
+      injectProjectContext();
+    }
+  }, true);
+
+  inputField.addEventListener("keydown", event => {
+    if (event.key !== "Enter" || event.shiftKey) return;
+
+    if (state.analyzing) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      showStatus("Espera a que termine el análisis de los archivos.", "info");
+      return;
     }
 
-    if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", initialize);
-    } else {
-        initialize();
-    }
+    injectProjectContext();
+  }, true);
 
-    window.codelabFileAnalyzer = {
-        getAnalysis: () => projectAnalysis,
-        getSelectedFiles: () => selectedFiles.map(file => file.name),
-        isAnalyzing: () => isAnalyzing
-    };
+  window.codelabAttachments = {
+    getFiles: () => state.files.map(item => item.name),
+    getAnalysis: () => state.analysis,
+    clear: () => {
+      state.files = [];
+      state.analysis = "";
+      state.analyzing = false;
+      renderAttachments();
+      hideStatus();
+    }
+  };
+
 })();
