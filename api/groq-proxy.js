@@ -85,7 +85,7 @@ if (!Array.isArray(messages) || safeMessages.length === 0) {
             });
         }
 
-        const selectedModel = model || "openai/gpt-oss-120b";
+        
 
         // Solicitud privada a Groq
         const groqResponse = await fetch(
