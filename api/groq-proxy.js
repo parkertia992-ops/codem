@@ -105,27 +105,29 @@ if (!securityResult.safe) {
         
 
         
-            "https://api.groq.com/openai/v1/chat/completions",
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${apiKey}`
-                },
-                body: JSON.stringify({
-                    model: selectedModel,
-messages: [
+          // Solicitud privada a Groq
+const groqResponse = await fetch(
+    "https://api.groq.com/openai/v1/chat/completions",
     {
-        role: "system",
-        content: systemPrompt
-    },
-    ...safeMessages
-],
-max_completion_tokens: type === "main" ? 2048 : 500,
-temperature: type === "main" ? 0.7 : 0.3
-                })
-            }
-        );
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+            model: selectedModel,
+            messages: [
+                {
+                    role: "system",
+                    content: systemPrompt
+                },
+                ...safeMessages
+            ],
+            max_completion_tokens: type === "main" ? 2048 : 500,
+            temperature: type === "main" ? 0.7 : 0.3
+        })
+    }
+);
 
         const responseText = await groqResponse.text();
 
