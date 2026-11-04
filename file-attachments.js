@@ -254,18 +254,27 @@
 
       const extension = getExtension(path);
 
-      if (!TEXT_EXTENSIONS.has(extension) &&
-          !/^image\/(png|jpeg|jpg|webp|gif)$/i.test(extension)) {
-        continue;
-      }
+const imageTypes = {
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  webp: "image/webp",
+  gif: "image/gif"
+};
 
-      const blob = await entry.async("blob");
+if (!TEXT_EXTENSIONS.has(extension) && !imageTypes[extension]) {
+  continue;
+}
 
-      const file = new File(
-        [blob],
-        path.split("/").pop(),
-        { type: blob.type || "" }
-      );
+const blob = await entry.async("blob");
+
+const file = new File(
+  [blob],
+  path.split("/").pop(),
+  {
+    type: blob.type || imageTypes[extension] || "text/plain"
+  }
+);
 
       Object.defineProperty(file, "webkitRelativePath", {
         value: path
