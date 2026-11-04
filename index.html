@@ -182,7 +182,7 @@ word-break: normal;
         </div>
     </div>
 
-     <!-- Enlazamos el archivo de configuración primero -->
+    
     <script>
         const inputField = document.getElementById('codelabInput');
         const sendButton = document.getElementById('codelabSendBtn');
@@ -229,7 +229,7 @@ if (texto.trim() === "") return;
             historyContainer.scrollTop = historyContainer.scrollHeight;
 
             try {
-                // Petición segura a través de la función serverless de Netlify (sin exponer la API Key)
+                // Petición segura a través de la función serverless de Vercel.
                 const response = await fetch("/api/groq-proxy", {
                     method: "POST",
                     headers: {
