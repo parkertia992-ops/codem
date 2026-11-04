@@ -174,7 +174,7 @@
         break;
       }
 
-      const path = file.webkitRelativePath || file.name;
+      const path = file.codelabRelativePath || file.webkitRelativePath || file.name;
       const key = `${path}:${file.size}`;
 
       if (existing.has(key)) continue;
