@@ -98,11 +98,15 @@ if (!Array.isArray(messages) || safeMessages.length === 0) {
                 },
                 body: JSON.stringify({
                     model: selectedModel,
-                    messages,
-                    max_completion_tokens: Number(max_tokens) || 2048,
-                    ...(Number.isFinite(Number(temperature))
-                        ? { temperature: Number(temperature) }
-                        : {})
+messages: [
+    {
+        role: "system",
+        content: systemPrompt
+    },
+    ...safeMessages
+],
+max_completion_tokens: type === "main" ? 2048 : 500,
+temperature: type === "main" ? 0.7 : 0.3
                 })
             }
         );
