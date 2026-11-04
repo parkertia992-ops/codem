@@ -89,6 +89,23 @@ if (!Array.isArray(messages) || safeMessages.length === 0) {
 
         // Solicitud privada a Groq
         const groqResponse = await fetch(
+           // Inspección de seguridad independiente
+const securityResult = await inspectPrompt(
+    safeMessages,
+    apiKey
+);
+
+if (!securityResult.safe) {
+    const blocked = securityResult.reason ===
+        "PROMPT_INJECTION_DETECTED";
+
+    return res.status(blocked ? 403 : 503).json({
+        error: blocked
+            ? "Solicitud bloqueada por el sistema de seguridad."
+            : "No fue posible verificar la seguridad de la solicitud.",
+        code: securityResult.reason
+    });
+}
             "https://api.groq.com/openai/v1/chat/completions",
             {
                 method: "POST",
