@@ -95,12 +95,14 @@ async function inspectPrompt(messages, apiKey) {
         };
     }
 
-    const userMessages = messages.filter(
+    const userMessages = messages
+    .filter(
         message =>
             message &&
             message.role === "user" &&
             typeof message.content === "string"
-    );
+    )
+    .slice(-1);
 
     if (userMessages.length === 0) {
         return {
