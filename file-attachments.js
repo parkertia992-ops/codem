@@ -499,18 +499,19 @@ const file = new File(
     return true;
   }
 
-  document.addEventListener("click", event => {
-    if (event.target.closest("#codelabSendBtn")) {
-      if (state.analyzing) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        showStatus("Espera a que termine el análisis de los archivos.", "info");
-        return;
-      }
+ document.addEventListener("keydown", event => {
+  if (event.target !== inputField) return;
+  if (event.key !== "Enter" || event.shiftKey) return;
 
-      injectProjectContext();
-    }
-  }, true);
+  if (state.analyzing) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    showStatus("Espera a que termine el análisis de los archivos.", "info");
+    return;
+  }
+
+  injectProjectContext();
+}, true);
 
   inputField.addEventListener("keydown", event => {
     if (event.key !== "Enter" || event.shiftKey) return;
