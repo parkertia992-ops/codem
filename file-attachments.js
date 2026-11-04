@@ -344,7 +344,7 @@ if (!selected.length) {
   const filesWithPaths = selected.map(file => {
     const relativePath = file.webkitRelativePath || file.name;
 
-    Object.defineProperty(file, "codelabRelativePath", {
+        Object.defineProperty(file, "codelabRelativePath", {
       value: relativePath,
       configurable: true
     });
@@ -352,8 +352,12 @@ if (!selected.length) {
     return file;
   });
 
+  // Incorporar los archivos seleccionados de la carpeta.
+  addFiles(filesWithPaths, folderName);
+});
 
-  function loadZipLibrary() {
+// Esta función debe quedar fuera del evento de selección de carpetas.
+function loadZipLibrary() {
     if (window.JSZip) return Promise.resolve(window.JSZip);
 
     if (state.zipPromise) return state.zipPromise;
