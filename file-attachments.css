@@ -1,0 +1,46 @@
+.codelab-files-button {
+    flex-shrink: 0;
+    padding: 9px 12px;
+    margin-right: 8px;
+    border: 1px solid #313244;
+    border-radius: 10px;
+    background: #171717;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .2s ease, border-color .2s ease;
+}
+
+.codelab-files-button:hover {
+    background: #292929;
+    border-color: #777777;
+}
+
+.codelab-files-status {
+    max-width: 750px;
+    margin: 8px auto 0;
+    padding: 0 16px;
+    color: #a6a6a6;
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+
+.codelab-files-status[data-state="loading"] {
+    color: #d8d8d8;
+}
+
+.codelab-files-status[data-state="success"] {
+    color: #16a34a;
+}
+
+.codelab-files-status[data-state="error"] {
+    color: #dc2626;
+}
+
+@media (max-width: 600px) {
+    .codelab-files-button {
+        padding: 8px;
+        font-size: 11px;
+    }
+}
