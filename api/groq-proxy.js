@@ -84,12 +84,7 @@ if (safeMessages.length === 0) {
     });
 }
 
-        // Validar historial
-        if (!Array.isArray(messages) || messages.length === 0) {
-            return res.status(400).json({
-                error: "Debes proporcionar un historial de mensajes válido."
-            });
-        }
+      
 
         
 
