@@ -88,7 +88,7 @@ if (!Number.isFinite(riskScore) || riskScore < 0 || riskScore > 1) {
 }
 
 // Umbral inicial de clasificación.
-return riskScore >= 0.5 ? "MALICIOUS" : "BENIGN";
+return riskScore >= 0.3 ? "MALICIOUS" : "BENIGN";
 }
 
 async function inspectPrompt(messages, apiKey) {
