@@ -124,87 +124,95 @@
     status.textContent = "";
   }
 
-  function renderAttachments() {
-    attachments.replaceChildren();
+ function renderAttachments() {
+  attachments.replaceChildren();
 
-    if (state.files.length === 0) {
-      attachments.hidden = true;
-      return;
-    }
-
-    attachments.hidden = false;
-
-    for (const item of state.files) {
-      const chip = document.createElement("div");
-      chip.className = "codelab-attachment-chip";
-
-      const name = document.createElement("span");
-      name.className = "codelab-attachment-name";
-      name.textContent = item.name;
-      name.title = item.name;
-
-      const remove = document.createElement("button");
-      remove.type = "button";
-      remove.className = "codelab-attachment-remove";
-      remove.textContent = "×";
-      remove.setAttribute("aria-label", `Eliminar ${item.name}`);
-
-      remove.addEventListener("click", () => {
-        state.files = state.files.filter(file => file.id !== item.id);
-        analyzeProject();
-      });
-
-      chip.append(name, remove);
-      attachments.appendChild(chip);
-    }
+  if (state.files.length === 0) {
+    attachments.hidden = true;
+    return;
   }
+
+  attachments.hidden = false;
+
+  const groups = new Map();
+
+  for (const item of state.files) {
+    const key = item.groupId || item.id;
+
+    if (!groups.has(key)) {
+      groups.set(key, {
+        id: key,
+        name: item.groupName || item.name,
+        items: []
+      });
+    }
+
+    groups.get(key).items.push(item);
+  }
+
+  for (const group of groups.values()) {
+    const chip = document.createElement("div");
+    chip.className = "codelab-attachment-chip";
+
+    const name = document.createElement("span");
+    name.className = "codelab-attachment-name";
+    name.textContent = group.name;
+    name.title = group.name;
+
+    const count = document.createElement("span");
+    count.className = "codelab-attachment-count";
+    count.textContent = `${group.items.length} archivos`;
+
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "codelab-attachment-remove";
+    remove.textContent = "×";
+    remove.setAttribute("aria-label", `Eliminar ${group.name}`);
+
+    remove.addEventListener("click", () => {
+      state.files = state.files.filter(item =>
+        (item.groupId || item.id) !== group.id
+      );
+
+      state.analysis = "";
+      renderAttachments();
+      hideStatus();
+    });
+
+    chip.append(name, count, remove);
+    attachments.appendChild(chip);
+  }
+}
 
   function calculateTotalSize(files) {
     return files.reduce((total, file) => total + (file.size || 0), 0);
   }
 
-  function addFiles(newFiles) {
-    const existing = new Set(
-      state.files.map(file => `${file.path}:${file.size}`)
-    );
+ folderInput.addEventListener("change", () => {
+  const selected = Array.from(folderInput.files || []);
+  folderInput.value = "";
 
-    for (const file of newFiles) {
-      if (state.files.length >= CONFIG.maxFiles) {
-        showStatus(`Máximo ${CONFIG.maxFiles} archivos por proyecto.`, "error");
-        break;
-      }
-
-      const path = file.codelabRelativePath || file.webkitRelativePath || file.name;
-      const key = `${path}:${file.size}`;
-
-      if (existing.has(key)) continue;
-
-      if (file.size > CONFIG.maxFileSize) {
-        showStatus(`${file.name}: supera el límite de 5 MB.`, "error");
-        continue;
-      }
-
-      const newTotal = calculateTotalSize(state.files) + file.size;
-
-      if (newTotal > CONFIG.maxTotalSize) {
-        showStatus("El proyecto supera el límite total de 20 MB.", "error");
-        break;
-      }
-
-      state.files.push({
-        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        file,
-        name: path,
-        size: file.size,
-        path
-      });
-
-      existing.add(key);
-    }
-
-    renderAttachments();
-    analyzeProject();
+  if (!selected.length) {
+    showStatus("La carpeta no contiene archivos accesibles.", "error");
+    return;
   }
+
+  const firstPath = selected[0].webkitRelativePath || selected[0].name;
+  const folderName = firstPath.split("/")[0] || "Proyecto";
+
+  const filesWithPaths = selected.map(file => {
+    const relativePath = file.webkitRelativePath || file.name;
+
+    Object.defineProperty(file, "codelabRelativePath", {
+      value: relativePath,
+      configurable: true
+    });
+
+    return file;
+  });
+
+  addFiles(filesWithPaths, folderName);
+});
 
   function loadZipLibrary() {
     if (window.JSZip) return Promise.resolve(window.JSZip);
@@ -470,7 +478,7 @@ async function extractZip(zipFile) {
 
       for (const zipFile of zipFiles) {
         const extracted = await extractZip(zipFile);
-        addFiles(extracted);
+        addFiles(extracted, zipFile.name);
       }
     } catch (error) {
       showStatus(error.message, "error");
@@ -484,29 +492,25 @@ async function extractZip(zipFile) {
   folderInput.value = "";
 
   if (!selected.length) {
-    showStatus("La carpeta seleccionada está vacía o no contiene archivos accesibles.", "error");
+    showStatus("La carpeta no contiene archivos accesibles.", "error");
     return;
   }
+
+  const firstPath = selected[0].webkitRelativePath || selected[0].name;
+  const folderName = firstPath.split("/")[0] || "Proyecto";
 
   const filesWithPaths = selected.map(file => {
     const relativePath = file.webkitRelativePath || file.name;
 
-    return {
-      file,
-      relativePath
-    };
+    Object.defineProperty(file, "codelabRelativePath", {
+      value: relativePath,
+      configurable: true
+    });
+
+    return file;
   });
 
-  addFiles(
-    filesWithPaths.map(item => {
-      Object.defineProperty(item.file, "codelabRelativePath", {
-        value: item.relativePath,
-        configurable: true
-      });
-
-      return item.file;
-    })
-  );
+  addFiles(filesWithPaths, folderName);
 });
 
   function injectProjectContext() {
