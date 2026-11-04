@@ -42,12 +42,41 @@ module.exports = async (req, res) => {
             });
         }
 
-        const {
-            messages,
-            model,
-            max_tokens,
-            temperature
-        } = body;
+const { messages, type } = body;
+
+if (!["main", "suggestions"].includes(type)) {
+    return res.status(400).json({
+        error: "Tipo de solicitud no válido."
+    });
+}
+
+const systemPrompt = type === "main"
+    ? process.env.CODELAB_SYSTEM_PROMPT
+    : process.env.CODELAB_SUGGESTER_PROMPT;
+
+if (!systemPrompt) {
+    return res.status(500).json({
+        error: "El prompt privado no está configurado en Vercel."
+    });
+}
+
+const selectedModel = type === "main"
+    ? "openai/gpt-oss-120b"
+    : "openai/gpt-oss-20b";
+
+const safeMessages = messages
+    .filter(message =>
+        message &&
+        ["user", "assistant"].includes(message.role) &&
+        typeof message.content === "string"
+    )
+    .slice(-60);
+
+if (!Array.isArray(messages) || safeMessages.length === 0) {
+    return res.status(400).json({
+        error: "Debes proporcionar un historial de mensajes válido."
+    });
+}
 
         // Validar historial
         if (!Array.isArray(messages) || messages.length === 0) {
