@@ -169,6 +169,13 @@ export default async function handler(req, res) {
 
   const apiKey = process.env.GROQ_API_KEY;
 
+console.log("[FILE ANALYZER AUTH]", {
+  exists: Boolean(apiKey),
+  length: apiKey ? apiKey.length : 0,
+  startsCorrectly: apiKey ? apiKey.startsWith("gsk_") : false,
+  hasWhitespace: apiKey ? apiKey !== apiKey.trim() : false
+});
+
   if (!apiKey) {
     return res.status(500).json({
       success: false,
@@ -233,7 +240,12 @@ export default async function handler(req, res) {
     const result = await response.json();
 
     if (!response.ok) {
-      console.error("Groq file analyzer:", result);
+    console.error("Groq file analyzer:", {
+  status: response.status,
+  error: result?.error?.message,
+  type: result?.error?.type,
+  code: result?.error?.code
+});
 
       return res.status(response.status).json({
         success: false,
