@@ -4,7 +4,9 @@
    VERCEL SERVERLESS FUNCTION
    La API Key permanece exclusivamente en el servidor.
    ========================================================================== */
+
 const { inspectPrompt } = require("./security/prompt-guard");
+
 module.exports = async (req, res) => {
     res.setHeader("Content-Type", "application/json");
     res.setHeader("Cache-Control", "no-store");
@@ -29,7 +31,7 @@ module.exports = async (req, res) => {
             });
         }
 
-        // Vercel puede entregar req.body como objeto o como texto
+        // Leer el cuerpo de la solicitud
         let body;
 
         try {
@@ -42,97 +44,114 @@ module.exports = async (req, res) => {
             });
         }
 
-const { messages, type } = body;
+        const { messages, type } = body;
 
-if (!["main", "suggestions"].includes(type)) {
-    return res.status(400).json({
-        error: "Tipo de solicitud no válido."
-    });
-}
+        // Validar tipo de solicitud
+        if (!["main", "suggestions"].includes(type)) {
+            return res.status(400).json({
+                error: "Tipo de solicitud no válido."
+            });
+        }
 
-const systemPrompt = type === "main"
-    ? process.env.CODELAB_SYSTEM_PROMPT
-    : process.env.CODELAB_SUGGESTER_PROMPT;
+        // Obtener prompt privado
+        const systemPrompt = type === "main"
+            ? process.env.CODELAB_SYSTEM_PROMPT
+            : process.env.CODELAB_SUGGESTER_PROMPT;
 
-if (!systemPrompt) {
-    return res.status(500).json({
-        error: "El prompt privado no está configurado en Vercel."
-    });
-}
+        if (!systemPrompt) {
+            return res.status(500).json({
+                error: "El prompt privado no está configurado en Vercel."
+            });
+        }
 
-const selectedModel = type === "main"
-    ? "openai/gpt-oss-120b"
-    : "openai/gpt-oss-20b";
+        // Seleccionar modelo
+        const selectedModel = type === "main"
+            ? "openai/gpt-oss-120b"
+            : "openai/gpt-oss-20b";
 
-if (!Array.isArray(messages) || messages.length === 0) {
-    return res.status(400).json({
-        error: "Debes proporcionar un historial de mensajes válido."
-    });
-}
+        // Validar historial
+        if (!Array.isArray(messages) || messages.length === 0) {
+            return res.status(400).json({
+                error: "Debes proporcionar un historial de mensajes válido."
+            });
+        }
 
-const safeMessages = messages
-    .filter(message =>
-        message &&
-        ["user", "assistant"].includes(message.role) &&
-        typeof message.content === "string"
-    )
-    .slice(-60);
+        const safeMessages = messages
+            .filter(message =>
+                message &&
+                ["user", "assistant"].includes(message.role) &&
+                typeof message.content === "string"
+            )
+            .slice(-60);
 
-if (safeMessages.length === 0) {
-    return res.status(400).json({
-        error: "El historial no contiene mensajes válidos."
-    });
-}
+        if (safeMessages.length === 0) {
+            return res.status(400).json({
+                error: "El historial no contiene mensajes válidos."
+            });
+        }
 
-      // Inspección de seguridad independiente
-const securityResult = await inspectPrompt(
-    safeMessages,
-    apiKey
-);
+        // Inspección de seguridad
+        let securityResult;
 
-// Bloquear únicamente cuando se detecte una amenaza explícita.
-if (securityResult.reason === "PROMPT_INJECTION_DETECTED") {
-    return res.status(403).json({
-        error: "Solicitud bloqueada por el sistema de seguridad.",
-        code: "PROMPT_INJECTION_DETECTED"
-    });
-}
+        try {
+            securityResult = await inspectPrompt(
+                safeMessages,
+                apiKey
+            );
+        } catch (securityError) {
+            console.error(
+                "CODELAB SECURITY ERROR:",
+                securityError.message
+            );
 
-// Si el servicio de seguridad falla técnicamente,
-// registrar el incidente sin detener el funcionamiento de Codelab.
-if (!securityResult.safe) {
-    console.error(
-        "CODELAB SECURITY WARNING:",
-        securityResult.reason
-    );
-}
+            securityResult = {
+                safe: false,
+                reason: "SECURITY_CHECK_FAILED"
+            };
+        }
 
-        
+        // Bloquear amenazas detectadas explícitamente
+        if (
+            securityResult &&
+            securityResult.reason === "PROMPT_INJECTION_DETECTED"
+        ) {
+            return res.status(403).json({
+                error: "Solicitud bloqueada por el sistema de seguridad.",
+                code: "PROMPT_INJECTION_DETECTED"
+            });
+        }
 
-        
-          // Solicitud privada a Groq
-const groqResponse = await fetch(
-    "https://api.groq.com/openai/v1/chat/completions",
-    {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-            model: selectedModel,
-            messages: [
-                {
-                    role: "system",
-                    content: systemPrompt
+        // Registrar fallos técnicos sin detener el chat
+        if (!securityResult || !securityResult.safe) {
+            console.error(
+                "CODELAB SECURITY WARNING:",
+                securityResult?.reason || "UNKNOWN_SECURITY_ERROR"
+            );
+        }
+
+        // Solicitud privada a Groq
+        const groqResponse = await fetch(
+            "https://api.groq.com/openai/v1/chat/completions",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${apiKey}`
                 },
-                ...safeMessages
-            ],
-            max_completion_tokens: type === "main" ? 2048 : 500,
-            temperature: type === "main" ? 0.7 : 0.3
-        })
-    }
-);
+                body: JSON.stringify({
+                    model: selectedModel,
+                    messages: [
+                        {
+                            role: "system",
+                            content: systemPrompt
+                        },
+                        ...safeMessages
+                    ],
+                    max_completion_tokens: type === "main" ? 2048 : 500,
+                    temperature: type === "main" ? 0.7 : 0.3
+                })
+            }
+        );
 
         const responseText = await groqResponse.text();
 
