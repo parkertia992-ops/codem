@@ -37,6 +37,9 @@
             word-break: break-word;
             font-size: 14px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            white-space: pre-wrap;
+overflow-wrap: anywhere;
+word-break: normal;
         }
 
         /* Burbuja general para los textos y explicaciones de la IA */
@@ -201,7 +204,9 @@ window.codelabGetChatMemory = () => {
         }));
 };
         async function enviarMensaje() {
-            const texto = inputField.value.trim();
+            const texto = inputField.value;
+
+if (texto.trim() === "") return;
             if (texto === "") return;
 
             // 1. Añade tu pregunta a la pantalla en una nubecita
