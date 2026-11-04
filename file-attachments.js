@@ -99,8 +99,11 @@
   }
 
   function isImage(file) {
-    return /^image\/(png|jpeg|jpg|webp|gif)$/i.test(file.type || "");
-  }
+  const extension = getExtension(file.name);
+
+  return /^image\/(png|jpeg|jpg|webp|gif)$/i.test(file.type || "") ||
+    ["png", "jpg", "jpeg", "webp", "gif"].includes(extension);
+}
 
   function isTextFile(file) {
     const extension = getExtension(file.name);
