@@ -2,13 +2,13 @@
   "use strict";
 
   const CONFIG = {
-    endpoint: "/api/file-analyzer",
-    maxFiles: 100,
-    maxFileSize: 5 * 1024 * 1024,
-    maxTotalSize: 20 * 1024 * 1024,
-    maxImages: 3,
-    zipLibrary: "https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"
-  };
+  endpoint: "/api/file-analyzer",
+  maxFiles: 100,
+  maxFileSize: 1024 * 1024,
+  maxTotalSize: 2.5 * 1024 * 1024,
+  maxImages: 3,
+  zipLibrary: "https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"
+};
 
   const TEXT_EXTENSIONS = new Set([
     "js", "jsx", "ts", "tsx", "mjs", "cjs",
