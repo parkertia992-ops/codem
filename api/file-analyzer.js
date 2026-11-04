@@ -49,8 +49,11 @@ function normalizeFiles(files) {
     const name = String(file.name || `archivo-${index + 1}`);
     const type = String(file.type || "");
     const extension = getExtension(name);
+const isImage =
+  type.startsWith("image/") ||
+  ["png", "jpg", "jpeg", "webp", "gif"].includes(extension);
 
-    if (type.startsWith("image/")) {
+if (isImage) {
       imageCount++;
 
       if (imageCount > MAX_IMAGES) {
