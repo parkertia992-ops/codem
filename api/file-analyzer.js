@@ -167,7 +167,10 @@ export default async function handler(req, res) {
     });
   }
 
-  const apiKey = process.env.GROQ_API_KEY;
+  const apiKey = (process.env.GROQ_API_KEY || "")
+  .trim()
+  .replace(/^Bearer\s+/i, "")
+  .replace(/^["']|["']$/g, "");
 
 console.log("[FILE ANALYZER AUTH]", {
   exists: Boolean(apiKey),
