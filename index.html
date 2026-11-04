@@ -236,11 +236,9 @@ if (texto.trim() === "") return;
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
-                        model: CODELAB_CONFIG.MODEL_NAME,
-                        messages: chatMemory,
-                        temperature: 0.7,
-                        max_tokens: CODELAB_CONFIG.MAX_TOKENS
-                    })
+    type: "main",
+    messages: chatMemory
+})
                 });
 
               const data = await response.json();
