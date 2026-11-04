@@ -187,7 +187,54 @@
   function calculateTotalSize(files) {
     return files.reduce((total, file) => total + (file.size || 0), 0);
   }
+function addFiles(newFiles, groupName = null) {
+  const existing = new Set(
+    state.files.map(file => `${file.path}:${file.size}`)
+  );
 
+  const groupId = groupName
+    ? `group-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    : null;
+
+  for (const file of newFiles) {
+    if (state.files.length >= CONFIG.maxFiles) {
+      showStatus(`Máximo ${CONFIG.maxFiles} archivos por proyecto.`, "error");
+      break;
+    }
+
+    const path = file.codelabRelativePath || file.webkitRelativePath || file.name;
+    const key = `${path}:${file.size}`;
+
+    if (existing.has(key)) continue;
+
+    if (file.size > CONFIG.maxFileSize) {
+      showStatus(`${path}: supera el límite permitido.`, "error");
+      continue;
+    }
+
+    if (calculateTotalSize(state.files) + file.size > CONFIG.maxTotalSize) {
+      showStatus("El proyecto supera el límite total permitido.", "error");
+      break;
+    }
+
+    state.files.push({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      file,
+      name: path,
+      size: file.size,
+      path,
+      groupId,
+      groupName
+    });
+
+    existing.add(key);
+  }
+
+  state.analysis = "";
+  renderAttachments();
+
+  showStatus("Archivos preparados. Se analizarán al enviar el mensaje.");
+}
  folderInput.addEventListener("change", () => {
   const selected = Array.from(folderInput.files || []);
   folderInput.value = "";
@@ -412,9 +459,16 @@ async function extractZip(zipFile) {
         throw new Error(result.error || "Falló el análisis del proyecto.");
       }
 
-      state.analysis = result.analysis;
-      state.analyzing = false;
+     state.analysis = result.analysis;
+state.analyzing = false;
 
+showStatus(
+  `Análisis completado: ${result.filesAnalyzed} archivos procesados` +
+  (result.filesIgnored ? ` · ${result.filesIgnored} ignorados` : ""),
+  "success"
+);
+
+return true;
       showStatus(
         `Análisis completado: ${result.filesAnalyzed} archivos procesados` +
         (result.filesIgnored ? ` · ${result.filesIgnored} ignorados` : ""),
@@ -426,6 +480,7 @@ async function extractZip(zipFile) {
       state.analyzing = false;
       showStatus(error.message || "No se pudo analizar el proyecto.", "error");
       console.error("Codelab attachment analysis:", error);
+      return false;
     }
   }
 
@@ -512,7 +567,7 @@ async function extractZip(zipFile) {
 
   addFiles(filesWithPaths, folderName);
 });
-
+let bypassSendInterception = false;
   function injectProjectContext() {
     if (!state.analysis || state.analyzing) return false;
 
@@ -539,32 +594,40 @@ async function extractZip(zipFile) {
     return true;
   }
 
- document.addEventListener("keydown", event => {
-  if (event.target !== inputField) return;
-  if (event.key !== "Enter" || event.shiftKey) return;
+async function processAttachmentSend(event) {
+  if (bypassSendInterception) return;
 
-  if (state.analyzing) {
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    showStatus("Espera a que termine el análisis de los archivos.", "info");
-    return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+
+  if (state.analyzing) return;
+
+  if (state.files.length > 0 && !state.analysis) {
+    const success = await analyzeProject();
+    if (!success) return;
   }
 
   injectProjectContext();
+
+  bypassSendInterception = true;
+  sendButton.click();
+
+  setTimeout(() => {
+    bypassSendInterception = false;
+  }, 0);
+}
+
+document.addEventListener("click", event => {
+  if (!event.target.closest("#codelabSendBtn")) return;
+  processAttachmentSend(event);
 }, true);
 
-  inputField.addEventListener("keydown", event => {
-    if (event.key !== "Enter" || event.shiftKey) return;
+document.addEventListener("keydown", event => {
+  if (event.target !== inputField) return;
+  if (event.key !== "Enter" || event.shiftKey) return;
 
-    if (state.analyzing) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      showStatus("Espera a que termine el análisis de los archivos.", "info");
-      return;
-    }
-
-    injectProjectContext();
-  }, true);
+  processAttachmentSend(event);
+}, true);
 
   window.codelabAttachments = {
     getFiles: () => state.files.map(item => item.name),
