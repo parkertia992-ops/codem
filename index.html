@@ -189,9 +189,7 @@ word-break: normal;
         const historyContainer = document.getElementById('codelabHistory');
 
         // Historial de mensajes para mantener contexto con Groq
-        let chatMemory = [
-            { role: "system", content: CODELAB_CONFIG.SYSTEM_PROMPT }
-        ];
+        let chatMemory = [];
 // Conexión de memoria compartida con la IA de sugerencias.
 window.codelabGetChatMemory = () => {
     return chatMemory
