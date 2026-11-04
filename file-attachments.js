@@ -46,11 +46,12 @@
   fileInput.hidden = true;
 
   const folderInput = document.createElement("input");
-  folderInput.type = "file";
-  folderInput.multiple = true;
-  folderInput.setAttribute("webkitdirectory", "");
-  folderInput.setAttribute("directory", "");
-  folderInput.hidden = true;
+
+folderInput.type = "file";
+folderInput.multiple = true;
+folderInput.webkitdirectory = true;
+folderInput.setAttribute("webkitdirectory", "webkitdirectory");
+folderInput.hidden = true;
 
   document.body.append(fileInput, folderInput);
 
@@ -238,11 +239,20 @@ function addFiles(newFiles, groupName = null) {
  folderInput.addEventListener("change", () => {
   const selected = Array.from(folderInput.files || []);
   folderInput.value = "";
+if (!selected.length) {
+  showStatus(
+    "El navegador no entregó archivos. Comprueba que hayas seleccionado la carpeta y no hayas cancelado el selector.",
+    "error"
+  );
 
-  if (!selected.length) {
-    showStatus("La carpeta no contiene archivos accesibles.", "error");
-    return;
-  }
+  console.error("Folder input:", {
+    webkitdirectory: folderInput.webkitdirectory,
+    filesLength: folderInput.files?.length,
+    value: folderInput.value
+  });
+
+  return;
+}
 
   const firstPath = selected[0].webkitRelativePath || selected[0].name;
   const folderName = firstPath.split("/")[0] || "Proyecto";
