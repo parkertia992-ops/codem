@@ -21,9 +21,9 @@ module.exports = async (req, res) => {
     try {
         // Obtener y limpiar la API Key
         const apiKey = (process.env.GROQ_API_KEY || "")
-            .trim()
-            .replace(/^Bearer\s+/i, "")
-            .replace(/^["']|["']$/g, "");
+  .trim()
+  .replace(/^Bearer\s+/i, "")
+  .replace(/^["']|["']$/g, "");
 
         if (!apiKey) {
             return res.status(500).json({
