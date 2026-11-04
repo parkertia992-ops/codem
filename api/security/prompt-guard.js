@@ -67,19 +67,28 @@ async function classifyChunk(text, apiKey) {
         );
     }
 
-    const classification = result.trim().toUpperCase();
+  const normalizedResult = result.trim().toUpperCase();
 
-    if (classification === "BENIGN") {
-        return "BENIGN";
-    }
+// Compatibilidad con respuestas textuales.
+if (normalizedResult === "BENIGN") {
+    return "BENIGN";
+}
 
-    if (classification === "MALICIOUS") {
-        return "MALICIOUS";
-    }
+if (normalizedResult === "MALICIOUS") {
+    return "MALICIOUS";
+}
 
-   throw new Error(
-    `Prompt Guard devolvió una etiqueta desconocida: ${JSON.stringify(result)}`
-);
+// Prompt Guard 2 también puede devolver una puntuación numérica.
+const riskScore = Number(result.trim());
+
+if (!Number.isFinite(riskScore) || riskScore < 0 || riskScore > 1) {
+    throw new Error(
+        `Prompt Guard devolvió una puntuación inválida: ${JSON.stringify(result)}`
+    );
+}
+
+// Umbral inicial de clasificación.
+return riskScore >= 0.5 ? "MALICIOUS" : "BENIGN";
 }
 
 async function inspectPrompt(messages, apiKey) {
