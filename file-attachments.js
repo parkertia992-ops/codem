@@ -479,12 +479,35 @@ async function extractZip(zipFile) {
     }
   });
 
-  folderInput.addEventListener("change", () => {
-    const selected = Array.from(folderInput.files || []);
-    folderInput.value = "";
+ folderInput.addEventListener("change", () => {
+  const selected = Array.from(folderInput.files || []);
+  folderInput.value = "";
 
-    if (selected.length) addFiles(selected);
+  if (!selected.length) {
+    showStatus("La carpeta seleccionada está vacía o no contiene archivos accesibles.", "error");
+    return;
+  }
+
+  const filesWithPaths = selected.map(file => {
+    const relativePath = file.webkitRelativePath || file.name;
+
+    return {
+      file,
+      relativePath
+    };
   });
+
+  addFiles(
+    filesWithPaths.map(item => {
+      Object.defineProperty(item.file, "codelabRelativePath", {
+        value: item.relativePath,
+        configurable: true
+      });
+
+      return item.file;
+    })
+  );
+});
 
   function injectProjectContext() {
     if (!state.analysis || state.analyzing) return false;
