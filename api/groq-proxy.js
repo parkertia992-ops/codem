@@ -4,7 +4,7 @@
    VERCEL SERVERLESS FUNCTION
    La API Key permanece exclusivamente en el servidor.
    ========================================================================== */
-
+const { inspectPrompt } = require("./security/prompt-guard");
 module.exports = async (req, res) => {
     res.setHeader("Content-Type", "application/json");
     res.setHeader("Cache-Control", "no-store");
