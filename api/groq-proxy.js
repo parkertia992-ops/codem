@@ -64,6 +64,12 @@ const selectedModel = type === "main"
     ? "openai/gpt-oss-120b"
     : "openai/gpt-oss-20b";
 
+if (!Array.isArray(messages) || messages.length === 0) {
+    return res.status(400).json({
+        error: "Debes proporcionar un historial de mensajes válido."
+    });
+}
+
 const safeMessages = messages
     .filter(message =>
         message &&
@@ -72,9 +78,9 @@ const safeMessages = messages
     )
     .slice(-60);
 
-if (!Array.isArray(messages) || safeMessages.length === 0) {
+if (safeMessages.length === 0) {
     return res.status(400).json({
-        error: "Debes proporcionar un historial de mensajes válido."
+        error: "El historial no contiene mensajes válidos."
     });
 }
 
