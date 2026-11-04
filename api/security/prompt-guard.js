@@ -49,11 +49,13 @@ async function classifyChunk(text, apiKey) {
         }
     );
 
-    if (!response.ok) {
-        throw new Error(
-            `Prompt Guard respondió con HTTP ${response.status}.`
-        );
-    }
+   if (!response.ok) {
+    const errorDetails = await response.text();
+
+    throw new Error(
+        `Prompt Guard HTTP ${response.status}: ${errorDetails.slice(0, 1000)}`
+    );
+}
 
     const data = await response.json();
 
