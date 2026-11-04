@@ -352,8 +352,6 @@ if (!selected.length) {
     return file;
   });
 
-  addFiles(filesWithPaths, folderName);
-});
 
   function loadZipLibrary() {
     if (window.JSZip) return Promise.resolve(window.JSZip);
