@@ -249,54 +249,7 @@ folderInput.hidden = true;
     showStatus("No se recibieron archivos.", "error");
   }
 }
-function addFiles(newFiles, groupName = null) {
-  const existing = new Set(
-    state.files.map(file => `${file.path}:${file.size}`)
-  );
 
-  const groupId = groupName
-    ? `group-${Date.now()}-${Math.random().toString(36).slice(2)}`
-    : null;
-
-  for (const file of newFiles) {
-    if (state.files.length >= CONFIG.maxFiles) {
-      showStatus(`Máximo ${CONFIG.maxFiles} archivos por proyecto.`, "error");
-      break;
-    }
-
-    const path = file.codelabRelativePath || file.webkitRelativePath || file.name;
-    const key = `${path}:${file.size}`;
-
-    if (existing.has(key)) continue;
-
-    if (file.size > CONFIG.maxFileSize) {
-      showStatus(`${path}: supera el límite permitido.`, "error");
-      continue;
-    }
-
-    if (calculateTotalSize(state.files) + file.size > CONFIG.maxTotalSize) {
-      showStatus("El proyecto supera el límite total permitido.", "error");
-      break;
-    }
-
-    state.files.push({
-      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      file,
-      name: path,
-      size: file.size,
-      path,
-      groupId,
-      groupName
-    });
-
-    existing.add(key);
-  }
-
-  state.analysis = "";
-  renderAttachments();
-
-  showStatus("Archivos preparados. Se analizarán al enviar el mensaje.");
-}
  folderInput.addEventListener("change", () => {
   const selected = Array.from(folderInput.files || []);
   folderInput.value = "";
