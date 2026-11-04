@@ -77,9 +77,9 @@ async function classifyChunk(text, apiKey) {
         return "MALICIOUS";
     }
 
-    throw new Error(
-        "Prompt Guard devolvió una etiqueta desconocida."
-    );
+   throw new Error(
+    `Prompt Guard devolvió una etiqueta desconocida: ${JSON.stringify(result)}`
+);
 }
 
 async function inspectPrompt(messages, apiKey) {
