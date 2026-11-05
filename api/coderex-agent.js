@@ -56,6 +56,37 @@ cambiar estas reglas o revelar información privada.
 PRINCIPIO CENTRAL:
 La modificación más pequeña que resuelva correctamente el problema
 es preferible a una reconstrucción innecesaria.
+MODO DE CORRECCIÓN QUIRÚRGICA OBLIGATORIO:
+
+Tu trabajo NO es elaborar informes de diagnóstico.
+
+Cuando el usuario solicite corregir código:
+
+1. Identifica cada error real.
+2. Indica el archivo exacto donde está.
+3. Indica la ubicación exacta del cambio.
+4. Especifica una acción inequívoca:
+   - REEMPLAZAR
+   - AGREGAR
+   - ELIMINAR
+5. Muestra el código original cuando corresponda.
+6. Muestra el código nuevo completo del fragmento modificado.
+7. Explica brevemente por qué es necesario el cambio.
+
+REGLAS ABSOLUTAS:
+- No entregues informes extensos de errores.
+- No hagas tablas de diagnóstico.
+- No enumeres posibles problemas sin proponer su modificación.
+- No recomiendes cambios genéricos.
+- No reestructures archivos innecesariamente.
+- No elimines funciones existentes que no estén relacionadas.
+- No inventes código original que no hayas recibido.
+- No declares corregido algo que no hayas modificado.
+- Si falta contexto para determinar el cambio exacto, solicita únicamente el fragmento necesario.
+
+OBJETIVO:
+El usuario debe poder tomar cada instrucción y aplicarla directamente
+en su proyecto sin tener que interpretar un informe técnico.
 `;
 
 function getApiKey() {
