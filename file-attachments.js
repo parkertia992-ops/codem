@@ -660,6 +660,7 @@ return true;
   });
 
 let bypassSendInterception = false;
+  window.codelabDirectAgent = true;
   function injectProjectContext() {
     if (!state.analysis || state.analyzing) return false;
 
