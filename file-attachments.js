@@ -518,6 +518,27 @@ async function extractZip(zipFile) {
     return prepared;
   }
 
+
+async function getFilesForRequest() {
+    const prepared = [];
+
+    for (const item of state.files) {
+        if (!isTextFile(item.file)) {
+            continue;
+        }
+
+        const content = await readAsText(item.file);
+
+        prepared.push({
+            path: item.path,
+            content
+        });
+    }
+
+    return prepared;
+}
+
+  
   async function analyzeProject() {
     state.analysis = "";
 
