@@ -204,6 +204,141 @@ window.codelabGetChatMemory = () => {
             content: message.content
         }));
 };
+
+    
+function createCopyButton(codeText) {
+    const copyBtn = document.createElement("button");
+    copyBtn.className = "codelab-copy-btn";
+    copyBtn.type = "button";
+    copyBtn.textContent = "Copiar";
+
+    copyBtn.addEventListener("click", async () => {
+        try {
+            await navigator.clipboard.writeText(codeText);
+            copyBtn.textContent = "¡Copiado!";
+
+            setTimeout(() => {
+                copyBtn.textContent = "Copiar";
+            }, 2000);
+        } catch (error) {
+            copyBtn.textContent = "Error al copiar";
+
+            setTimeout(() => {
+                copyBtn.textContent = "Copiar";
+            }, 2000);
+        }
+    });
+
+    return copyBtn;
+}
+
+function createCodeBlock(content, label) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "codelab-code-block-wrapper";
+
+    const header = document.createElement("div");
+    header.className = "codelab-code-header";
+
+    const filename = document.createElement("span");
+    filename.textContent = label;
+
+    header.appendChild(filename);
+    header.appendChild(createCopyButton(content));
+
+    const pre = document.createElement("pre");
+    const code = document.createElement("code");
+
+    code.className = "codelab-code-content";
+    code.textContent = content;
+
+    pre.appendChild(code);
+    wrapper.appendChild(header);
+    wrapper.appendChild(pre);
+
+    return wrapper;
+}
+
+function appendMarkdownSegment(target, content) {
+    if (!content.trim()) return;
+
+    const temporaryContainer = document.createElement("div");
+    temporaryContainer.innerHTML = marked.parse(content);
+
+    while (temporaryContainer.firstChild) {
+        target.appendChild(temporaryContainer.firstChild);
+    }
+}
+
+function renderAssistantMessage(container, content) {
+    container.textContent = "";
+
+    const filePattern =
+        /<file\s+path=["']([^"']+)["']\s*>([\s\S]*?)<\/file>/gi;
+
+    let lastIndex = 0;
+    let match;
+
+    while ((match = filePattern.exec(content)) !== null) {
+        const normalText = content.slice(lastIndex, match.index);
+
+        appendMarkdownSegment(container, normalText);
+
+        const filePath = match[1];
+        const fileContent = match[2].replace(/^\n|\n$/g, "");
+
+        container.appendChild(
+            createCodeBlock(fileContent, filePath)
+        );
+
+        lastIndex = filePattern.lastIndex;
+    }
+
+    appendMarkdownSegment(
+        container,
+        content.slice(lastIndex)
+    );
+
+    // También añade botones de copia a los bloques Markdown normales.
+    container.querySelectorAll("pre").forEach(preBlock => {
+        if (preBlock.parentElement?.classList.contains(
+            "codelab-code-block-wrapper"
+        )) {
+            return;
+        }
+
+        const codeElement = preBlock.querySelector("code");
+
+        if (!codeElement) return;
+
+        const wrapper = document.createElement("div");
+        wrapper.className = "codelab-code-block-wrapper";
+
+        const header = document.createElement("div");
+        header.className = "codelab-code-header";
+
+        const languageClass = [...codeElement.classList]
+            .find(className => className.startsWith("language-"));
+
+        const language = languageClass
+            ? languageClass.replace("language-", "")
+            : "código";
+
+        const label = document.createElement("span");
+        label.textContent = language;
+
+        header.appendChild(label);
+        header.appendChild(
+            createCopyButton(codeElement.textContent)
+        );
+
+        codeElement.classList.add("codelab-code-content");
+
+        preBlock.parentNode.insertBefore(wrapper, preBlock);
+        wrapper.appendChild(header);
+        wrapper.appendChild(preBlock);
+    });
+}
+
         async function enviarMensaje() {
             const texto = inputField.value;
 
@@ -274,48 +409,9 @@ if (typeof respuestaGroq !== "string") {
     throw new Error("Groq no devolvió contenido válido.");
 } 
 
-                // Parseamos primero el markdown general
-                let parsedHTML = marked.parse(respuestaGroq);
-                aiBubble.innerHTML = parsedHTML;
+              
+renderAssistantMessage(aiBubble, respuestaGroq);
 
-                // Buscamos todos los bloques de código (<pre><code>) generados para inyectarles la cabecera y el botón de copiar
-                aiBubble.querySelectorAll('pre').forEach((preBlock) => {
-                    const codeElement = preBlock.querySelector('code');
-                    if (!codeElement) return;
-
-                    const rawCodeText = codeElement.textContent;
-
-                    // Creamos el contenedor envolvente del bloque de código
-                    const wrapper = document.createElement('div');
-                    wrapper.className = 'codelab-code-block-wrapper';
-
-                    // Creamos la barra superior
-                    const header = document.createElement('div');
-                    header.className = 'codelab-code-header';
-                    header.innerHTML = '<span>código</span>';
-
-                    // Creamos el botón de copiar
-                    const copyBtn = document.createElement('button');
-                    copyBtn.className = 'codelab-copy-btn';
-                    copyBtn.textContent = 'Copiar';
-                    
-                    copyBtn.addEventListener('click', () => {
-                        navigator.clipboard.writeText(rawCodeText).then(() => {
-                            copyBtn.textContent = '¡Copiado!';
-                            setTimeout(() => { copyBtn.textContent = 'Copiar'; }, 2000);
-                        });
-                    });
-
-                    header.appendChild(copyBtn);
-
-                    // Estilizamos el contenido para que respete los saltos de línea exactos
-                    codeElement.className = 'codelab-code-content';
-                    
-                    // Reorganizamos la estructura en el DOM
-                    preBlock.parentNode.insertBefore(wrapper, preBlock);
-                    wrapper.appendChild(header);
-                    wrapper.appendChild(preBlock);
-                });
                 
                 // Guarda la respuesta en la memoria del chat
                 chatMemory.push({ role: "assistant", content: respuestaGroq });
