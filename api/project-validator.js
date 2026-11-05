@@ -135,7 +135,7 @@ async function createTemporaryProject(files) {
     }
 }
 
-async function checkJavaScriptSyntax(filePath) {
+async function checkJavaScriptSyntax(filePath, displayPath) {
     try {
         await executeFile(
             process.execPath,
@@ -148,7 +148,7 @@ async function checkJavaScriptSyntax(filePath) {
         );
 
         return {
-            file: filePath,
+            file: displayPath,
             check: "javascript_syntax",
             status: "passed",
             message: "Sintaxis JavaScript válida."
@@ -164,7 +164,7 @@ async function checkJavaScriptSyntax(filePath) {
             .trim();
 
         return {
-            file: filePath,
+            file: displayPath,
             check: "javascript_syntax",
             status: "failed",
             message: output.slice(0, 5000)
@@ -172,21 +172,22 @@ async function checkJavaScriptSyntax(filePath) {
     }
 }
 
-async function checkJsonSyntax(filePath) {
+
+async function checkJsonSyntax(filePath, displayPath) {
     try {
         const content = await fs.readFile(filePath, "utf8");
 
         JSON.parse(content);
 
         return {
-            file: filePath,
+            file: displayPath,
             check: "json_syntax",
             status: "passed",
             message: "JSON válido."
         };
     } catch (error) {
         return {
-            file: filePath,
+            file: displayPath,
             check: "json_syntax",
             status: "failed",
             message: String(error.message).slice(0, 5000)
@@ -209,14 +210,14 @@ async function inspectProject(files, directory) {
 
         if (JAVASCRIPT_EXTENSIONS.has(extension)) {
             results.push(
-                await checkJavaScriptSyntax(absolutePath)
-            );
+    await checkJavaScriptSyntax(absolutePath, file.path)
+);
         }
 
         if (JSON_EXTENSIONS.has(extension)) {
-            results.push(
-                await checkJsonSyntax(absolutePath)
-            );
+           results.push(
+    await checkJsonSyntax(absolutePath, file.path)
+);
         }
     }
 
