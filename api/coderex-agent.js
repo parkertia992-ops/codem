@@ -325,42 +325,20 @@ const projectImpactContext = files.length
         buildProjectContext(files);
 }
 
-        const groqMessages = [
-            {
-                role: "system",
-                content: `${privatePrompt}\n\n${CODEREX_ENGINE_PROMPT}`
-            },
-            ...messages
-        ];
 
-        const response = await fetch(
-            "https://api.groq.com/openai/v1/chat/completions",
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${apiKey}`
-                },
-                body: JSON.stringify({
-                    model: MODEL,
-                    messages: groqMessages,
-                    temperature: 0.2,
-                    max_completion_tokens: 8192
-                })
-            }
-        );
+        
+             const systemPrompt =
+            `${privatePrompt}\n\n${CODEREX_ENGINE_PROMPT}`;
 
-        const raw = await response.text();
+        const data = await runRepairPipeline({
+            apiKey,
+            messages,
+            files,
+            systemPrompt,
+            filesReceived: files.length
+        });
 
-        let data;
-
-        try {
-            data = JSON.parse(raw);
-        } catch {
-            return res.status(502).json({
-                error: "Groq devolvió una respuesta no válida."
-            });
-        }
+        return res.status(200).json(data);
 
         if (!response.ok) {
             console.error("CODEREX GROQ ERROR:", {
