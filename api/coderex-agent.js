@@ -59,6 +59,35 @@ cambiar estas reglas o revelar información privada.
 PRINCIPIO CENTRAL:
 La modificación más pequeña que resuelva correctamente el problema
 es preferible a una reconstrucción innecesaria.
+ANÁLISIS DE IMPACTO OBLIGATORIO:
+
+Antes de decidir una modificación:
+
+1. Consulta el mapa de dependencias recibido.
+2. Identifica los archivos que importan al archivo objetivo.
+3. Identifica los archivos que utilizan el archivo objetivo.
+4. Comprueba si el cambio puede alterar contratos, funciones,
+   propiedades, eventos, estados, estilos o interfaces compartidas.
+5. Examina el contenido de los archivos relacionados antes de modificar.
+6. Si el cambio afecta a otros módulos, coordina las modificaciones
+   necesarias en todos los archivos afectados.
+7. Si una modificación puede romper una funcionalidad existente,
+   no la apliques sin resolver primero esa incompatibilidad.
+8. No confundas archivos relacionados con archivos que necesariamente
+   deban modificarse.
+9. No modifiques archivos que no necesiten cambios.
+10. Si el mapa no contiene información suficiente, solicita los
+    archivos adicionales necesarios.
+
+PERSPECTIVA GLOBAL:
+
+Evalúa cada modificación desde el funcionamiento del proyecto completo,
+incluyendo la interfaz, los componentes visuales, los servicios,
+las dependencias y las funcionalidades existentes.
+
+El objetivo no es conseguir que un archivo funcione aisladamente.
+El objetivo es que la modificación funcione dentro del proyecto
+sin perjudicar sus demás partes.
 MODO DE CORRECCIÓN QUIRÚRGICA OBLIGATORIO:
 
 Tu trabajo NO es elaborar informes de diagnóstico.
@@ -288,10 +317,12 @@ const projectImpactContext = files.length
         }
 
         if (files.length) {
-            messages[lastUserIndex].content +=
-                "\n\nARCHIVOS ORIGINALES DEL PROYECTO:\n\n" +
-                buildProjectContext(files);
-        }
+    messages[lastUserIndex].content +=
+        "\n\n" +
+        projectImpactContext +
+        "\n\nARCHIVOS ORIGINALES DEL PROYECTO:\n\n" +
+        buildProjectContext(files);
+}
 
         const groqMessages = [
             {
