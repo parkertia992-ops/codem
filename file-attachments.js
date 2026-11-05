@@ -687,6 +687,7 @@ let bypassSendInterception = false;
   }
 
 async function processAttachmentSend(event) {
+  if (window.codelabDirectAgent === true) return;
   if (bypassSendInterception) return;
 
   event.preventDefault();
