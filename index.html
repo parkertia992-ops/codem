@@ -232,16 +232,33 @@ if (texto.trim() === "") return;
 
             try {
                 // Petición segura a través de la función serverless de Vercel.
-                const response = await fetch("/api/groq-proxy", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-    type: "main",
-    messages: chatMemory
-})
-                });
+                
+const attachedFiles = window.codelabAttachments
+    ? await window.codelabAttachments.getFilesForRequest()
+    : [];
+
+const agentEndpoint = attachedFiles.length > 0
+    ? "/api/coderex-agent"
+    : "/api/groq-proxy";
+
+const requestBody = attachedFiles.length > 0
+    ? {
+        messages: chatMemory,
+        files: attachedFiles
+    }
+    : {
+        type: "main",
+        messages: chatMemory
+    };
+
+const response = await fetch(agentEndpoint, {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json"
+    },
+    body: JSON.stringify(requestBody)
+});
+
 
               const data = await response.json();
 
@@ -302,7 +319,9 @@ if (typeof respuestaGroq !== "string") {
                 
                 // Guarda la respuesta en la memoria del chat
                 chatMemory.push({ role: "assistant", content: respuestaGroq });
-
+                 if (attachedFiles.length > 0) {
+    window.codelabAttachments?.clear();
+}
             } catch (error) {
                 aiBubble.textContent = "Hubo un error al conectar con Groq: " + error.message;
             }
