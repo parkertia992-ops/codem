@@ -1,4 +1,6 @@
-
+const {
+    runRepairPipeline
+} = require("./repair-pipeline");
 const { inspectPrompt } = require("./security/prompt-guard");
 const {
     buildProjectMap,
