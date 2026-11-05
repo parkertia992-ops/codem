@@ -112,12 +112,25 @@ REGLAS:
 12. No modifiques partes ajenas al problema.
 13. No afirmes haber compilado ni ejecutado pruebas sin hacerlo.
 14. Si no puedes realizar una modificación con la información disponible, no inventes una solución.
+EXPLICACIÓN DE LA REPARACIÓN:
 
+Además de las operaciones de modificación, debes proporcionar un resumen
+breve que explique:
+
+- Qué error encontraste.
+- Qué corregiste.
+- Por qué era necesario.
+- Qué comportamiento se conserva.
+
+No repitas el código dentro del resumen.
+No inventes resultados de pruebas.
+No describas modificaciones que no hayas realizado.
 FORMATO OBLIGATORIO:
 
 Devuelve exclusivamente JSON válido:
 
 {
+  "summary": "Explicación breve de la reparación realizada.",
   "changes": [
     {
       "operation": "replace",
@@ -413,29 +426,32 @@ function applyChanges(changes, files, analysis) {
     });
 }
 
-function buildFinalContent(changedFiles, validation) {
+function buildFinalContent(changedFiles, validation, summary) {
+    const explanation = summary
+        ? summary.trim()
+        : "Se realizaron las modificaciones solicitadas.";
+
     const filesContent = changedFiles.map(file =>
         `<file path="${file.path}">\n${file.content}\n</file>`
     ).join("\n\n");
 
     const validationContent = [
-        "RESULTADO DE VALIDACIÓN",
+        "### Resultado de validación",
         `Estado: ${validation.status}`,
-        `Comprobaciones ejecutadas: ${validation.summary.totalChecks}`,
+        `Comprobaciones: ${validation.summary.totalChecks}`,
         `Correctas: ${validation.summary.passed}`,
         `Fallidas: ${validation.summary.failed}`,
         "",
         ...validation.results
             .filter(result => result.status === "failed")
             .map(result =>
-                `ERROR EN ${result.file}:\n${result.message}`
-            ),
-        "",
-        "LIMITACIONES:",
-        ...validation.limitations.map(item => `- ${item}`)
+                `**Error en ${result.file}:**\n${result.message}`
+            )
     ].join("\n");
 
     return [
+        explanation,
+        "### Archivos modificados",
         filesContent,
         validationContent
     ].filter(Boolean).join("\n\n");
@@ -587,10 +603,11 @@ return {
         index: 0,
         message: {
             role: "assistant",
-            content: buildFinalContent(
-                changedFiles,
-                validation
-            )
+content: buildFinalContent(
+    changedFiles,
+    validation,
+    repairData.summary
+)
         },
         finish_reason: "stop"
     }],
