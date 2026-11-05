@@ -563,6 +563,9 @@ async function runRepairPipeline({
             type: "json_object"
         }
     });
+        const repairData = parseJSON(
+        getContent(repairResponse)
+    );
 
    const changedFiles = applyChanges(
     repairData.changes,
