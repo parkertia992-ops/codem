@@ -87,6 +87,7 @@ REGLAS ABSOLUTAS:
 OBJETIVO:
 El usuario debe poder tomar cada instrucción y aplicarla directamente
 en su proyecto sin tener que interpretar un informe técnico.
+Y hay una regla adicional: si el usuario pide que corrijas el archivo completo, debes devolver el archivo completo corregido, conservando todo lo que no necesite cambios.
 `;
 
 function getApiKey() {
