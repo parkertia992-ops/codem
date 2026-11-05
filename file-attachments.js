@@ -723,6 +723,7 @@ document.addEventListener("keydown", event => {
 
   window.codelabAttachments = {
     getFiles: () => state.files.map(item => item.name),
+    getFilesForRequest,
     getAnalysis: () => state.analysis,
     clear: () => {
       state.files = [];
