@@ -1,6 +1,9 @@
 
 const { inspectPrompt } = require("./security/prompt-guard");
-
+const {
+    buildProjectMap,
+    getRelatedFiles
+} = require("./project-impact-engine");
 const MODEL = "openai/gpt-oss-120b";
 const MAX_FILES = 100;
 const MAX_TOTAL_CHARS = 300000;
@@ -164,7 +167,43 @@ function buildProjectContext(files) {
         `========== FIN DEL ARCHIVO ${index + 1} ==========`
     ].join("\n")).join("\n\n");
 }
+function buildProjectImpactContext(projectMap) {
+    const relations = [];
 
+    for (const file of projectMap.values()) {
+        const relatedFiles = getRelatedFiles(
+            file.path,
+            projectMap
+        );
+
+        relations.push({
+            path: file.path,
+            imports: file.imports,
+            importedBy: file.importedBy,
+            relatedFiles
+        });
+    }
+
+    return [
+        "========== MAPA DE DEPENDENCIAS DEL PROYECTO ==========",
+        `TOTAL DE ARCHIVOS INDEXADOS: ${projectMap.size}`,
+        "",
+        ...relations.map(item => [
+            `ARCHIVO: ${item.path}`,
+            `IMPORTA: ${item.imports.length
+                ? item.imports.join(", ")
+                : "Sin dependencias locales detectadas"}`,
+            `ES UTILIZADO POR: ${item.importedBy.length
+                ? item.importedBy.join(", ")
+                : "Sin consumidores locales detectados"}`,
+            `ARCHIVOS RELACIONADOS: ${item.relatedFiles.length
+                ? item.relatedFiles.join(", ")
+                : "Ninguno detectado"}`,
+            "----------------------------------------"
+        ].join("\n")),
+        "========== FIN DEL MAPA DE DEPENDENCIAS =========="
+    ].join("\n");
+}
 module.exports = async function handler(req, res) {
     if (req.method !== "POST") {
         res.setHeader("Allow", "POST");
@@ -191,7 +230,13 @@ module.exports = async function handler(req, res) {
 
     try {
         const body = parseBody(req.body);
-        const files = normalizeFiles(body.files || []);
+const files = normalizeFiles(body.files || []);
+
+const projectMap = buildProjectMap(files);
+
+const projectImpactContext = files.length
+    ? buildProjectImpactContext(projectMap)
+    : "";
 
         if (!Array.isArray(body.messages)) {
             return res.status(400).json({
