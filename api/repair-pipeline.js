@@ -1,4 +1,6 @@
-
+const {
+    validateProject
+} = require("./project-validator");
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 const ANALYZER_MODEL = "openai/gpt-oss-20b";
@@ -411,10 +413,32 @@ function applyChanges(changes, files, analysis) {
     });
 }
 
-function buildFinalContent(changedFiles) {
-    return changedFiles.map(file =>
+function buildFinalContent(changedFiles, validation) {
+    const filesContent = changedFiles.map(file =>
         `<file path="${file.path}">\n${file.content}\n</file>`
     ).join("\n\n");
+
+    const validationContent = [
+        "RESULTADO DE VALIDACIÓN",
+        `Estado: ${validation.status}`,
+        `Comprobaciones ejecutadas: ${validation.summary.totalChecks}`,
+        `Correctas: ${validation.summary.passed}`,
+        `Fallidas: ${validation.summary.failed}`,
+        "",
+        ...validation.results
+            .filter(result => result.status === "failed")
+            .map(result =>
+                `ERROR EN ${result.file}:\n${result.message}`
+            ),
+        "",
+        "LIMITACIONES:",
+        ...validation.limitations.map(item => `- ${item}`)
+    ].join("\n");
+
+    return [
+        filesContent,
+        validationContent
+    ].filter(Boolean).join("\n\n");
 }
 
 async function runRepairPipeline({
@@ -540,27 +564,38 @@ async function runRepairPipeline({
         }
     });
 
-    const repairData = parseJSON(getContent(repairResponse));
+   const changedFiles = applyChanges(
+    repairData.changes,
+    files,
+    analysis
+);
 
-    const changedFiles = applyChanges(
-        repairData.changes,
-        files,
-        analysis
-    );
+const validation = await validateProject(changedFiles);
 
-    return {
-        choices: [{
-            index: 0,
-            message: {
-                role: "assistant",
-                content: buildFinalContent(changedFiles)
-            },
-            finish_reason: "stop"
-        }],
-        filesReceived,
-        repairStatus: analysis.action,
-        changedFiles
-    };
+const repairStatus =
+    validation.status === "failed"
+        ? "validation_failed"
+        : validation.status === "passed"
+            ? "validation_passed"
+            : "validation_incomplete";
+
+return {
+    choices: [{
+        index: 0,
+        message: {
+            role: "assistant",
+            content: buildFinalContent(
+                changedFiles,
+                validation
+            )
+        },
+        finish_reason: "stop"
+    }],
+    filesReceived,
+    repairStatus,
+    changedFiles,
+    validation
+};
 }
 
 module.exports = {
