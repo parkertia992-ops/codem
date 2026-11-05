@@ -6,7 +6,6 @@ const {
     buildProjectMap,
     getRelatedFiles
 } = require("./project-impact-engine");
-const MODEL = "openai/gpt-oss-120b";
 const MAX_FILES = 100;
 const MAX_TOTAL_CHARS = 300000;
 
