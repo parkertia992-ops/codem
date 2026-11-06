@@ -147,7 +147,7 @@ REGLAS:
 - No devuelvas dos objetos JSON.
 - No incluyas texto fuera del objeto JSON.
 
-
+`;
 
 const EXECUTION_PROMPT = `
 Eres el motor de ejecución de Coderex.
