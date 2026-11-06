@@ -5,6 +5,7 @@ const {
     extractGroqContent,
     toClientResponse
 } = require("./groq-response");
+const { interpretPrompt } = require("./ojito");
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 const ANALYZER_MODEL = "openai/gpt-oss-20b";
@@ -627,12 +628,20 @@ async function runRepairPipeline({
     messages,
     files,
     systemPrompt,
+    technicalPrompt,
     filesReceived
 }) {
     if (!apiKey) {
         throw new Error("Falta GROQ_API_KEY.");
     }
-
+    if (
+        typeof technicalPrompt !== "string" ||
+        !technicalPrompt.trim()
+    ) {
+        throw new Error(
+            "No se recibió la especificación técnica de Ojito."
+        );
+    }
     const conversation = messages.filter(message =>
         ["user", "assistant"].includes(message.role)
     );
@@ -647,12 +656,14 @@ async function runRepairPipeline({
         file.content
     ].join("\n")).join("\n\n");
 
-    const analyzerInput = [
-        "SOLICITUD Y CONVERSACIÓN:",
-        JSON.stringify(conversation),
-        "ARCHIVOS DEL PROYECTO:",
-        projectContext || "No se recibieron archivos."
-    ].join("\n\n");
+   const analyzerInput = [
+    "PETICIÓN ORIGINAL Y CONVERSACIÓN:",
+    JSON.stringify(conversation),
+    "ESPECIFICACIÓN TÉCNICA PREPARADA POR OJITO:",
+    technicalPrompt,
+    "ARCHIVOS DEL PROYECTO:",
+    projectContext || "No se recibieron archivos."
+].join("\n\n");
 
     // ETAPA 1: EL 20B ANALIZA.
 
@@ -699,12 +710,17 @@ async function runRepairPipeline({
         const answer = await requestGroq(apiKey, {
             model: REPAIR_MODEL,
             messages: [
-                {
-                    role: "system",
-                    content: systemPrompt
-                },
-                ...conversation
-            ],
+    {
+        role: "system",
+        content: [
+            systemPrompt,
+            "ESPECIFICACIÓN TÉCNICA PREPARADA POR OJITO:",
+            technicalPrompt,
+            "La petición original del usuario se conserva en la conversación."
+        ].join("\n\n")
+    },
+    ...conversation
+],
             temperature: 0.2,
             max_completion_tokens: 8192
         });
@@ -723,16 +739,18 @@ const executionConfig = getExecutionConfig(
         messages: [
             {
                 role: "system",
-                content: [
-                    systemPrompt,
-                    EXECUTION_PROMPT,
-"INSTRUCCIONES DE LA MODALIDAD:",
-executionConfig.instructions,
-                    "INFORME DEL ANALIZADOR 20B:",
-                    JSON.stringify(analysis, null, 2),
-                    "ARCHIVOS ORIGINALES:",
-                    projectContext
-                ].join("\n\n")
+              content: [
+    systemPrompt,
+    EXECUTION_PROMPT,
+    "ESPECIFICACIÓN TÉCNICA PREPARADA POR OJITO:",
+    technicalPrompt,
+    "INSTRUCCIONES DE LA MODALIDAD:",
+    executionConfig.instructions,
+    "INFORME DEL ANALIZADOR 20B:",
+    JSON.stringify(analysis, null, 2),
+    "ARCHIVOS ORIGINALES:",
+    projectContext
+].join("\n\n")
             },
             ...conversation
         ],
