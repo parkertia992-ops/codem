@@ -274,13 +274,7 @@ No introduzcas funcionalidades nuevas.
         instructions: ""
     };
 }
-    }
-  ]
-}
-
-OPERACIONES PERMITIDAS:
-
-
+    
 
 
 async function requestGroq(apiKey, payload) {
