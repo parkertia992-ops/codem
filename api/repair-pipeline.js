@@ -710,9 +710,7 @@ async function runRepairPipeline({
     }
 
     // ETAPA 2: EL 120B RECIBE EL INFORME Y EJECUTA.
-const executionConfig = getExecutionConfig(
-    analysis.change_mode
-);
+
     const repairResponse = await requestGroq(apiKey, {
         model: REPAIR_MODEL,
         messages: [
