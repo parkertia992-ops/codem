@@ -1,6 +1,10 @@
 const {
     validateProject
 } = require("./project-validator");
+const {
+    extractGroqContent,
+    toClientResponse
+} = require("./groq-response");
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 const ANALYZER_MODEL = "openai/gpt-oss-20b";
@@ -164,9 +168,6 @@ No incluyas Markdown ni bloques de código.
 No incluyas archivos sin cambios.
 `;
 
-function getContent(response) {
-    return response?.choices?.[0]?.message?.content;
-}
 
 async function requestGroq(apiKey, payload) {
     const response = await fetch(GROQ_URL, {
@@ -511,25 +512,16 @@ async function runRepairPipeline({
     });
 
     const analysis = validateAnalysis(
-        parseJSON(getContent(analyzerResponse)),
+        parseJSON(extractGroqContent(analyzerResponse))
         files
     );
 
     // NO HAY REPARACIÓN: NO SE LLAMA AL 120B.
 
     if (analysis.action === "no_changes") {
-        return {
-            choices: [{
-                index: 0,
-                message: {
-                    role: "assistant",
-                    content: "No se encontraron errores ni cambios necesarios en el código proporcionado."
-                },
-                finish_reason: "stop"
-            }],
-            filesReceived,
-            repairStatus: "no_changes"
-        };
+        return toClientResponse(
+    "No se encontraron errores ni cambios necesarios en el código proporcionado."
+);
     }
 
     // CONSULTA NORMAL: EL 120B RESPONDE, SIN MODIFICAR ARCHIVOS.
@@ -548,11 +540,9 @@ async function runRepairPipeline({
             max_completion_tokens: 8192
         });
 
-        return {
-            ...answer,
-            filesReceived,
-            repairStatus: "answer"
-        };
+        return toClientResponse(
+    extractGroqContent(answer)
+);
     }
 
     // ETAPA 2: EL 120B RECIBE EL INFORME Y EJECUTA.
@@ -598,24 +588,15 @@ const repairStatus =
             ? "validation_passed"
             : "validation_incomplete";
 
-return {
-    choices: [{
-        index: 0,
-        message: {
-            role: "assistant",
-content: buildFinalContent(
-    changedFiles,
-    validation,
-    repairData.summary
-)
-        },
-        finish_reason: "stop"
-    }],
-    filesReceived,
-    repairStatus,
-    changedFiles,
-    validation
-};
+
+    
+    return toClientResponse(
+    buildFinalContent(
+        changedFiles,
+        validation,
+        repairData.summary
+    )
+);
 }
 
 module.exports = {
