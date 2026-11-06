@@ -1,6 +1,7 @@
 const {
     runRepairPipeline
 } = require("./repair-pipeline");
+const { interpretPrompt } = require("./ojito");
 const {
     toClientResponse
 } = require("./groq-response");
@@ -354,7 +355,21 @@ const projectImpactContext = files.length
         if (!security.safe) {
             console.warn("CODEREX SECURITY:", security.reason);
         }
+        // INTERPRETACIÓN INTERNA DE LA PETICIÓN CON OJITO
 
+        const originalPrompt = messages[lastUserIndex].content;
+
+        const ojitoResult = await interpretPrompt(originalPrompt, {
+            conversationContext: JSON.stringify(
+                messages.slice(0, lastUserIndex)
+            ),
+            projectContext: [
+                projectImpactContext,
+                buildProjectContext(files)
+            ].filter(Boolean).join("\n\n")
+        });
+
+        const technicalPrompt = ojitoResult.technicalPrompt;
         if (files.length) {
     messages[lastUserIndex].content +=
         "\n\n" +
@@ -368,13 +383,14 @@ const projectImpactContext = files.length
              const systemPrompt =
             `${privatePrompt}\n\n${CODEREX_ENGINE_PROMPT}`;
 
-        const data = await runRepairPipeline({
-            apiKey,
-            messages,
-            files,
-            systemPrompt,
-            filesReceived: files.length
-        });
+  const data = await runRepairPipeline({
+    apiKey,
+    messages,
+    files,
+    systemPrompt,
+    technicalPrompt,
+    filesReceived: files.length
+});
 
         return res.status(200).json(
     toClientResponse(data.content)
