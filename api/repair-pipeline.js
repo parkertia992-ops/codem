@@ -112,30 +112,40 @@ En requested_changes incluye exclusivamente los elementos
 expresamente solicitados y sus requisitos indispensables.
 
 No incluyas sugerencias, mejoras opcionales ni ideas propias.
-DEVUELVE EXCLUSIVAMENTE JSON VÁLIDO:
+DEVUELVE EXCLUSIVAMENTE UN OBJETO JSON VÁLIDO:
 
-{
-  "action": "repair",
-  "findings": [
-    {
-      "file": "src/example.ts",
-      "location": "función o línea",
-      "evidence": "fragmento exacto existente",
-      "problem": "error demostrado",
-      "required_change": "corrección necesaria"
-    }
-  ],
 {
   "action": "requested_change",
   "change_mode": "create",
   "findings": [],
-  "requested_changes": [
-    "Descripción concreta de lo solicitado"
-  ],
+  "requested_changes": [],
   "summary": "Resumen interno"
 }
-`;
 
+VALORES PERMITIDOS:
+
+action:
+- repair
+- requested_change
+- answer
+- no_changes
+
+change_mode:
+- repair
+- create
+- modify
+- none
+
+REGLAS:
+
+- repair requiere change_mode repair.
+- requested_change requiere create o modify.
+- answer requiere none.
+- no_changes requiere none.
+- findings debe ser un array.
+- requested_changes debe ser un array.
+- No devuelvas dos objetos JSON.
+- No incluyas texto fuera del objeto JSON.
 
 
 
@@ -436,16 +446,11 @@ if (
     }
 
     return {
-        action: data.action,
-        findings,
-        requested_changes: requestedChanges
-        return {
     action: data.action,
     change_mode: data.change_mode,
     findings,
     requested_changes: requestedChanges
 };
-    };
 }
 
 function validatePath(value) {
@@ -705,7 +710,9 @@ async function runRepairPipeline({
     }
 
     // ETAPA 2: EL 120B RECIBE EL INFORME Y EJECUTA.
-
+const executionConfig = getExecutionConfig(
+    analysis.change_mode
+);
     const repairResponse = await requestGroq(apiKey, {
         model: REPAIR_MODEL,
         messages: [
