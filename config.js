@@ -7,7 +7,7 @@ const CODELAB_CONFIG = {
     // El modelo exacto que pediste
     MODEL_NAME: "openai/gpt-oss-120b", 
     // Límite estricto de tokens para las respuestas de la IA
-    MAX_TOKENS: 2048,
+    MAX_TOKENS: 5000,
     // El espacio para que pongas el prompt personalizado que quieras darle a la IA
     SYSTEM_PROMPT: `Eres CODELAB, un asistente experto en programación y desarrollo de software.
 
