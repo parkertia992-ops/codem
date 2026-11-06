@@ -108,10 +108,40 @@ Ejemplos:
 - "Crea una aplicación completa" autoriza una implementación
   más amplia, pero únicamente dentro de las características solicitadas.
 
-En requested_changes incluye exclusivamente los elementos
-expresamente solicitados y sus requisitos indispensables.
+En requested_changes:
 
-No incluyas sugerencias, mejoras opcionales ni ideas propias.
+- Si action es "requested_change", el array NUNCA puede estar vacío.
+- Cada elemento debe ser un string.
+- Describe cada elemento como una tarea concreta que el modelo 120B debe ejecutar.
+- Incluye todas las partes expresamente solicitadas.
+- Para una creación, describe qué debe crearse, sus características y su alcance.
+- No confundas requested_changes con findings.
+- No incluyas tareas inventadas ni mejoras opcionales.
+- Si action es "repair", requested_changes debe ser [].
+- Si action es "answer" o "no_changes", requested_changes debe ser [].
+
+Ejemplo de creación:
+
+{
+  "action": "requested_change",
+  "change_mode": "create",
+  "findings": [],
+  "requested_changes": [
+    "Crear una página web completa de cafetería con las secciones solicitadas, diseño responsive e interacciones funcionales."
+  ],
+  "summary": "Creación de página web de cafetería."
+}
+
+Ejemplo de reparación:
+
+{
+  "action": "repair",
+  "change_mode": "repair",
+  "findings": [],
+  "requested_changes": [],
+  "summary": "Reparación de errores demostrados."
+}
+
 DEVUELVE EXCLUSIVAMENTE UN OBJETO JSON VÁLIDO:
 
 {
