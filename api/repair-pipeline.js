@@ -47,16 +47,35 @@ No solicites añadir comentarios.
 CLASIFICACIÓN:
 
 repair:
-Existen errores demostrables que deben corregirse.
+El usuario solicita reparar o revisar código y existen errores
+demostrables.
 
 requested_change:
-El usuario solicita explícitamente crear o modificar una funcionalidad.
+El usuario solicita crear o modificar código.
 
 answer:
-El usuario solamente realiza una consulta y no solicita modificaciones.
+El usuario realiza una consulta y no solicita cambios.
 
 no_changes:
-El usuario solicita revisar o reparar, pero no existen errores ni cambios necesarios.
+El usuario solicita revisar o reparar, pero no existen errores
+ni cambios necesarios.
+
+MODALIDAD DE EJECUCIÓN:
+
+Para repair:
+change_mode = "repair"
+
+Para requested_change:
+change_mode = "create" cuando solicita crear algo nuevo.
+change_mode = "modify" cuando solicita cambiar algo existente.
+
+Para answer o no_changes:
+change_mode = "none"
+
+No clasifiques una creación como reparación.
+No clasifiques una consulta como solicitud de implementación.
+No confundas crear una página completa con crear solamente
+un componente puntual.
 
 EVIDENCIA:
 
@@ -106,8 +125,14 @@ DEVUELVE EXCLUSIVAMENTE JSON VÁLIDO:
       "required_change": "corrección necesaria"
     }
   ],
-  "requested_changes": [],
-  "summary": "resumen interno"
+{
+  "action": "requested_change",
+  "change_mode": "create",
+  "findings": [],
+  "requested_changes": [
+    "Descripción concreta de lo solicitado"
+  ],
+  "summary": "Resumen interno"
 }
 `;
 
