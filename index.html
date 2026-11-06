@@ -403,7 +403,7 @@ if (!response.ok) {
     );
 }
 
-const respuestaGroq = data.choices?.[0]?.message?.content;
+const respuestaGroq = data.content;
 
 if (typeof respuestaGroq !== "string") {
     throw new Error("Groq no devolvió contenido válido.");
