@@ -6,6 +6,10 @@
    ========================================================================== */
 
 const { inspectPrompt } = require("./security/prompt-guard");
+const {
+    extractGroqContent,
+    toClientResponse
+} = require("./groq-response");
 
 module.exports = async (req, res) => {
     res.setHeader("Content-Type", "application/json");
@@ -188,7 +192,9 @@ module.exports = async (req, res) => {
             });
         }
 
-        return res.status(200).json(responseData);
+        return res.status(200).json(
+    toClientResponse(extractGroqContent(responseData))
+);
 
     } catch (error) {
         console.error("CODELAB GROQ PROXY ERROR:", error);
