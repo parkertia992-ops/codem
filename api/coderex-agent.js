@@ -1,6 +1,9 @@
 const {
     runRepairPipeline
 } = require("./repair-pipeline");
+const {
+    toClientResponse
+} = require("./groq-response");
 const { inspectPrompt } = require("./security/prompt-guard");
 const {
     buildProjectMap,
@@ -338,35 +341,12 @@ const projectImpactContext = files.length
             filesReceived: files.length
         });
 
-        return res.status(200).json(data);
+        return res.status(200).json(
+    toClientResponse(data.content)
+);
 
-        if (!response.ok) {
-            console.error("CODEREX GROQ ERROR:", {
-                status: response.status,
-                type: data.error?.type,
-                code: data.error?.code
-            });
+        
 
-            return res.status(response.status).json({
-                error: data.error?.message ||
-                    "No se pudo procesar la solicitud.",
-                type: data.error?.type,
-                code: data.error?.code
-            });
-        }
-
-        if (
-            typeof data.choices?.[0]?.message?.content !== "string"
-        ) {
-            return res.status(502).json({
-                error: "El modelo no devolvió contenido válido."
-            });
-        }
-
-        return res.status(200).json({
-            ...data,
-            filesReceived: files.length
-        });
 
     } catch (error) {
         console.error("CODEREX AGENT ERROR:", error);
