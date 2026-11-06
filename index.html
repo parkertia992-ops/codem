@@ -372,19 +372,13 @@ const attachedFiles = window.codelabAttachments
     ? await window.codelabAttachments.getFilesForRequest()
     : [];
 
-const agentEndpoint = attachedFiles.length > 0
-    ? "/api/coderex-agent"
-    : "/api/groq-proxy";
 
-const requestBody = attachedFiles.length > 0
-    ? {
-        messages: chatMemory,
-        files: attachedFiles
-    }
-    : {
-        type: "main",
-        messages: chatMemory
-    };
+const agentEndpoint = "/api/coderex-agent";
+
+const requestBody = {
+    messages: chatMemory,
+    files: attachedFiles
+};
 
 const response = await fetch(agentEndpoint, {
     method: "POST",
