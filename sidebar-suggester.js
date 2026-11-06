@@ -293,8 +293,8 @@ No incluyas Markdown ni explicaciones fuera del JSON.
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                    model: "openai/gpt-oss-20b",
-                    messages: [
+    type: "suggestions",
+    messages: [
                         {
                             role: "system",
                             content: systemPrompt
@@ -331,8 +331,7 @@ No incluyas Markdown ni explicaciones fuera del JSON.
                 );
             }
 
-            const generatedText =
-                data.choices?.[0]?.message?.content;
+            const generatedText = data.content;
 
             if (typeof generatedText !== "string") {
                 throw new Error(
