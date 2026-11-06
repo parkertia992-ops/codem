@@ -280,26 +280,7 @@ No introduzcas funcionalidades nuevas.
 
 OPERACIONES PERMITIDAS:
 
-replace:
-Sustituye una única aparición exacta de old_text por new_text.
 
-create:
-Crea un archivo nuevo cuando la solicitud del usuario lo autorice.
-
-Formato de creación:
-
-{
-  "operation": "create",
-  "path": "src/new-file.ts",
-  "new_text": "contenido completo"
-}
-
-No utilices operaciones distintas.
-No devuelvas archivos completos como sustitución libre.
-No incluyas comentarios explicativos.
-No incluyas Markdown ni bloques de código.
-No incluyas archivos sin cambios.
-`;
 
 
 async function requestGroq(apiKey, payload) {
@@ -710,7 +691,9 @@ async function runRepairPipeline({
     }
 
     // ETAPA 2: EL 120B RECIBE EL INFORME Y EJECUTA.
-
+const executionConfig = getExecutionConfig(
+    analysis.change_mode
+);
     const repairResponse = await requestGroq(apiKey, {
         model: REPAIR_MODEL,
         messages: [
@@ -735,9 +718,7 @@ executionConfig.instructions,
             type: "json_object"
         }
     });
-    const executionConfig = getExecutionConfig(
-    analysis.change_mode
-);
+  
         const repairData = parseJSON(
     extractGroqContent(repairResponse)
 );
