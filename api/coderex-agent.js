@@ -7,6 +7,9 @@ const {
 } = require("./groq-response");
 const { inspectPrompt } = require("./security/prompt-guard");
 const {
+    runDesignResearch
+} = require("./design-research");
+const {
     buildProjectMap,
     getRelatedFiles
 } = require("./project-impact-engine");
@@ -370,6 +373,18 @@ const projectImpactContext = files.length
         });
 
         const technicalPrompt = ojitoResult.technicalPrompt;
+        // INVESTIGACIÓN DE REFERENCIAS VISUALES CON SERPER
+
+const designContext = await runDesignResearch({
+    prompt: originalPrompt,
+    apiKey: process.env.SERPER_API_KEY
+});
+
+if (designContext) {
+    messages[lastUserIndex].content +=
+        "\n\n" +
+        designContext;
+}
         if (files.length) {
     messages[lastUserIndex].content +=
         "\n\n" +
