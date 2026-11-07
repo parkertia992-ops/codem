@@ -778,14 +778,13 @@ const changedFiles = applyChanges(
 
 // ETAPA 4: VALIDACIÓN Y REPARACIÓN DE SINTAXIS.
 
-const syntaxRepair = await repairSyntaxErrors({
+const syntaxRepair = await correctGeneratedFiles({
     apiKey,
     changes: changedFiles.map(file => ({
         path: file.path,
         new_text: file.content
     }))
 });
-
 // Incorporar el código reparado a los archivos modificados.
 
 const repairedContent = new Map(
