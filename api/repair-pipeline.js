@@ -6,6 +6,9 @@ const {
     toClientResponse
 } = require("./groq-response");
 const { interpretPrompt } = require("./ojito");
+const {
+    repairSyntaxErrors
+} = require("./syntax-repair-engine");
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 const ANALYZER_MODEL = "openai/gpt-oss-20b";
@@ -765,13 +768,79 @@ const executionConfig = getExecutionConfig(
     extractGroqContent(repairResponse)
 );
 
-   const changedFiles = applyChanges(
+   // ETAPA 3: APLICACIÓN DE LOS CAMBIOS GENERADOS.
+
+const changedFiles = applyChanges(
     repairData.changes,
     files,
     analysis
 );
 
-const validation = await validateProject(changedFiles);
+// ETAPA 4: VALIDACIÓN Y REPARACIÓN DE SINTAXIS.
+
+const syntaxRepair = await repairSyntaxErrors({
+    apiKey,
+    changes: changedFiles.map(file => ({
+        path: file.path,
+        new_text: file.content
+    }))
+});
+
+// Incorporar el código reparado a los archivos modificados.
+
+const repairedContent = new Map(
+    syntaxRepair.changes.map(change => [
+        change.path,
+        change.new_text
+    ])
+);
+
+for (const file of changedFiles) {
+    if (repairedContent.has(file.path)) {
+        file.content = repairedContent.get(file.path);
+    }
+}
+
+// ETAPA 5: VALIDACIÓN GENERAL DEL PROYECTO.
+
+const projectValidation = await validateProject(changedFiles);
+
+// Combinar los resultados de ambas validaciones.
+
+const validation = {
+    ...projectValidation,
+
+    status: syntaxRepair.success
+        ? projectValidation.status
+        : "failed",
+
+    summary: {
+        ...projectValidation.summary,
+        totalChecks:
+            projectValidation.summary.totalChecks +
+            syntaxRepair.validation.totalFiles,
+
+        passed:
+            projectValidation.summary.passed +
+            syntaxRepair.validation.validFiles,
+
+        failed:
+            projectValidation.summary.failed +
+            syntaxRepair.validation.invalidFiles
+    },
+
+    results: [
+        ...projectValidation.results,
+
+        ...syntaxRepair.validation.results.map(result => ({
+            file: result.path,
+            status: result.valid ? "passed" : "failed",
+            message: result.valid
+                ? "Sintaxis correcta."
+                : result.errors.join("\n")
+        }))
+    ]
+};
 
 const repairStatus =
     validation.status === "failed"
