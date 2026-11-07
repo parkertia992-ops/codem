@@ -7,8 +7,8 @@ const {
 } = require("./groq-response");
 const { interpretPrompt } = require("./ojito");
 const {
-    repairSyntaxErrors
-} = require("./syntax-repair-engine");
+    correctGeneratedFiles
+} = require("./coderx-correction");
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 const ANALYZER_MODEL = "openai/gpt-oss-20b";
