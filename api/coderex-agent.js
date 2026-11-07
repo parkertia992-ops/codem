@@ -398,12 +398,13 @@ if (designContext) {
              const systemPrompt =
             `${privatePrompt}\n\n${CODEREX_ENGINE_PROMPT}`;
 
-  const data = await runRepairPipeline({
+ const data = await runRepairPipeline({
     apiKey,
     messages,
     files,
     systemPrompt,
     technicalPrompt,
+    originalPrompt,
     filesReceived: files.length
 });
 
