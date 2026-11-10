@@ -1,3 +1,7 @@
+const designContext = await runProfessionalDesignEngine({
+  prompt: originalPrompt,
+  apiKey: process.env.SERPER_API_KEY
+});
 const {
     runRepairPipeline
 } = require("./repair-pipeline");
