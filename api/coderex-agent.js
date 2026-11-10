@@ -316,14 +316,12 @@ const technicalPrompt = originalPrompt;
         const systemPrompt = `${privatePrompt}\n\n${CODEREX_ENGINE_PROMPT}`;
 
         const data = await runRepairPipeline({
-            apiKey,
-            messages,
-            files,
-            systemPrompt,
-            technicalPrompt,
-            originalPrompt,
-            filesReceived: files.length
-        });
+    apiKey,
+    messages,
+    files,
+    systemPrompt,
+    filesReceived: files.length
+});
 
         return res.status(200).json(
             toClientResponse(data.content)
