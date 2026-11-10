@@ -10,6 +10,16 @@ const { inspectPrompt } = require("./security/prompt-guard");
 const {
     runDesignResearch
 } = require("./design-research");
+// Al inicio de tu archivo:
+const { injectSerperImages } = require('./serper-extractor');
+
+// ... más abajo, donde tu IA termina de generar el HTML:
+const codigoGeneradoPorIA = response.choices[0].message.content; // O como sea que saques el texto de la IA
+
+// Pasamos el código por el extractor para inyectar las imágenes de Serper
+const codigoFinal = await injectSerperImages(codigoGeneradoPorIA);
+
+// Ahora sí, devuelves 'codigoFinal' al frontend
 const {
     runProfessionalDesignEngine
 } = require("./professional-design-engine");
