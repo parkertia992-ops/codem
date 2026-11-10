@@ -185,6 +185,22 @@ OBJETIVO:
 El usuario debe poder tomar cada instrucción y aplicarla directamente
 en su proyecto sin tener que interpretar un informe técnico.
 Y hay una regla adicional: si el usuario pide que corrijas el archivo completo, debes devolver el archivo completo corregido, conservando todo lo que no necesite cambios.
+CALIDAD VISUAL OBLIGATORIA (MODO CREACIÓN):
+Cuando generes interfaces, páginas o componentes visuales:
+
+1. Nunca entregues diseños genéricos, planos o de aspecto amateur.
+2. Siempre define un sistema de diseño mínimo:
+   - Tipografía con carácter (evita solo system-ui)
+   - Escala de spacing consistente
+   - Paleta de colores limitada y coherente
+   - Estados hover, focus y active bien cuidados
+3. Los datos deben manejarse correctamente:
+   - Nunca muestres "undefined"
+   - Nunca muestres "Invalid Date"
+   - Usa valores por defecto elegantes cuando falte información
+4. El resultado debe verse profesional incluso sin imágenes.
+5. Prefiere calidad sobre cantidad de elementos.
+6. Si el usuario pide una app de notas, dashboard, landing, etc., el resultado debe poder mostrarse con orgullo.
 `;
 
 function getApiKey() {
