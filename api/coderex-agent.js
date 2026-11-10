@@ -90,6 +90,9 @@ Toda interfaz que generes debe cumplir como mínimo:
 Si el resultado se ve básico, genérico o descuidado, has fallado.
 
 Tu estándar no es "que funcione". Tu estándar es "que se sienta bien hecho".
+REGLAS CRÍTICAS DE FUNCIONALIDAD OBLIGATORIAS:
+1. IMÁGENES REALES Y ACTIVAS: Queda estrictamente prohibido dejar etiquetas <img> vacías, con rutas rotas o textos alternativos sin imagen. Cada vez que generes una tarjeta o sección visual, DEBES incluir URLs de stock reales y públicas de Unsplash (por ejemplo: https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80).
+2. BOTONES INTERACTIVOS Y FUNCIONALES: Ningún botón o enlace debe ser meramente decorativo. Todos los botones (<button>) deben tener eventos de JavaScript funcionales (como `onclick="alert('...')"` o lógica integrada) y los elementos de navegación deben usar etiquetas `<a>` con anclas reales (`href="#seccion"`) para que la página responda al usarla.
 `;
 
 function getApiKey() {
