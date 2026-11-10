@@ -1,3 +1,6 @@
+// Al inicio de tu archivo:
+const { injectSerperImages } = require('./serper-extractor');
+
 const CoderexAssets = require('./coderex-assets'); // Ajusta la ruta relativa si está en otra carpeta (ej: '../coderex-assets')
 const {
     runRepairPipeline
@@ -10,8 +13,6 @@ const { inspectPrompt } = require("./security/prompt-guard");
 const {
     runDesignResearch
 } = require("./design-research");
-// Al inicio de tu archivo:
-const { injectSerperImages } = require('./serper-extractor');
 
 // ... más abajo, donde tu IA termina de generar el HTML:
 const codigoGeneradoPorIA = response.choices[0].message.content; // O como sea que saques el texto de la IA
