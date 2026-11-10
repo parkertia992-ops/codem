@@ -10,44 +10,22 @@ const {
     runDesignResearch
 } = require("./design-research");
 const {
-    runProfessionalDesignEngine   // ← NUEVO
+    runProfessionalDesignEngine
 } = require("./professional-design-engine");
 const {
     buildProjectMap,
     getRelatedFiles
 } = require("./project-impact-engine");
-const designContext = await runProfessionalDesignEngine({
-  prompt: originalPrompt,
-  apiKey: process.env.SERPER_API_KEY
-});
-const {
-    runRepairPipeline
-} = require("./repair-pipeline");
-const { interpretPrompt } = require("./ojito");
-const {
-    toClientResponse
-} = require("./groq-response");
-const { inspectPrompt } = require("./security/prompt-guard");
-const {
-    runDesignResearch
-} = require("./design-research");
-const {
-    buildProjectMap,
-    getRelatedFiles
-} = require("./project-impact-engine");
+
 const MAX_FILES = 100;
 const MAX_TOTAL_CHARS = 300000;
 
 const CODEREX_ENGINE_PROMPT = `
-
 Eres CODEREX, un agente de ingeniería de software.
-
 Tu responsabilidad es ejecutar exactamente el objetivo solicitado
 por el usuario, respetando el proyecto existente.
 
-
 CONTROL INTELIGENTE DEL ALCANCE:
-
 El usuario define el objetivo y el alcance del producto.
 Tienes libertad técnica y creativa para ejecutar ese objetivo
 con calidad profesional.
@@ -99,20 +77,15 @@ REPARACIÓN:
 ENTREGA:
 Cuando entregues una reparación, proporciona el contenido completo
 de cada archivo que haya cambiado, conservando su ruta original.
-
 Cada archivo corregido debe aparecer separado y claramente identificado.
-
 Incluye también una explicación breve de:
 - Error encontrado.
 - Cambio realizado.
 - Motivo de la modificación.
-
 No devuelvas archivos que no hayan cambiado.
-
 Si el usuario solicita una modificación puntual, indica el archivo,
 la ubicación exacta, el código que debe agregarse o sustituirse
 y la razón.
-
 No afirmes haber ejecutado pruebas que no hayas realizado.
 
 SEGURIDAD:
@@ -124,10 +97,9 @@ PRINCIPIO CENTRAL:
 Entrega la implementación más completa y profesional que corresponda
 al objetivo solicitado, sin sacrificar calidad por restricciones
 innecesarias ni ampliar el producto fuera de ese objetivo.
+
 ANÁLISIS DE IMPACTO OBLIGATORIO:
-
 Antes de decidir una modificación:
-
 1. Consulta el mapa de dependencias recibido.
 2. Identifica los archivos que importan al archivo objetivo.
 3. Identifica los archivos que utilizan el archivo objetivo.
@@ -145,20 +117,16 @@ Antes de decidir una modificación:
     archivos adicionales necesarios.
 
 PERSPECTIVA GLOBAL:
-
 Evalúa cada modificación desde el funcionamiento del proyecto completo,
 incluyendo la interfaz, los componentes visuales, los servicios,
 las dependencias y las funcionalidades existentes.
-
 El objetivo no es conseguir que un archivo funcione aisladamente.
 El objetivo es que la modificación funcione dentro del proyecto
 sin perjudicar sus demás partes.
+
 MODO DE CORRECCIÓN QUIRÚRGICA OBLIGATORIO:
-
 Tu trabajo NO es elaborar informes de diagnóstico.
-
 Cuando el usuario solicite corregir código:
-
 1. Identifica cada error real.
 2. Indica el archivo exacto donde está.
 3. Indica la ubicación exacta del cambio.
@@ -185,9 +153,9 @@ OBJETIVO:
 El usuario debe poder tomar cada instrucción y aplicarla directamente
 en su proyecto sin tener que interpretar un informe técnico.
 Y hay una regla adicional: si el usuario pide que corrijas el archivo completo, debes devolver el archivo completo corregido, conservando todo lo que no necesite cambios.
+
 CALIDAD VISUAL OBLIGATORIA (MODO CREACIÓN):
 Cuando generes interfaces, páginas o componentes visuales:
-
 1. Nunca entregues diseños genéricos, planos o de aspecto amateur.
 2. Siempre define un sistema de diseño mínimo:
    - Tipografía con carácter (evita solo system-ui)
@@ -214,7 +182,6 @@ function parseBody(body) {
     if (typeof body === "string") {
         return JSON.parse(body);
     }
-
     return body || {};
 }
 
@@ -222,7 +189,6 @@ function normalizeFiles(files) {
     if (!Array.isArray(files)) {
         throw new Error("La lista de archivos no es válida.");
     }
-
     if (files.length > MAX_FILES) {
         throw new Error(`Máximo ${MAX_FILES} archivos por solicitud.`);
     }
@@ -254,7 +220,6 @@ function normalizeFiles(files) {
         }
 
         totalChars += file.content.length;
-
         if (totalChars > MAX_TOTAL_CHARS) {
             throw new Error(
                 "El proyecto supera el límite de 300.000 caracteres."
@@ -277,6 +242,7 @@ function buildProjectContext(files) {
         `========== FIN DEL ARCHIVO ${index + 1} ==========`
     ].join("\n")).join("\n\n");
 }
+
 function buildProjectImpactContext(projectMap) {
     const relations = [];
 
@@ -314,6 +280,7 @@ function buildProjectImpactContext(projectMap) {
         "========== FIN DEL MAPA DE DEPENDENCIAS =========="
     ].join("\n");
 }
+
 module.exports = async function handler(req, res) {
     if (req.method !== "POST") {
         res.setHeader("Allow", "POST");
@@ -323,7 +290,6 @@ module.exports = async function handler(req, res) {
     }
 
     const apiKey = getApiKey();
-
     if (!apiKey) {
         return res.status(500).json({
             error: "Falta GROQ_API_KEY."
@@ -331,7 +297,6 @@ module.exports = async function handler(req, res) {
     }
 
     const privatePrompt = process.env.CODELAB_SYSTEM_PROMPT;
-
     if (!privatePrompt || !privatePrompt.trim()) {
         return res.status(500).json({
             error: "Falta CODELAB_SYSTEM_PROMPT."
@@ -340,13 +305,11 @@ module.exports = async function handler(req, res) {
 
     try {
         const body = parseBody(req.body);
-const files = normalizeFiles(body.files || []);
-
-const projectMap = buildProjectMap(files);
-
-const projectImpactContext = files.length
-    ? buildProjectImpactContext(projectMap)
-    : "";
+        const files = normalizeFiles(body.files || []);
+        const projectMap = buildProjectMap(files);
+        const projectImpactContext = files.length
+            ? buildProjectImpactContext(projectMap)
+            : "";
 
         if (!Array.isArray(body.messages)) {
             return res.status(400).json({
@@ -383,7 +346,6 @@ const projectImpactContext = files.length
         }
 
         const security = await inspectPrompt(messages, apiKey);
-
         if (
             !security.safe &&
             security.reason === "PROMPT_INJECTION_DETECTED"
@@ -396,8 +358,8 @@ const projectImpactContext = files.length
         if (!security.safe) {
             console.warn("CODEREX SECURITY:", security.reason);
         }
-        // INTERPRETACIÓN INTERNA DE LA PETICIÓN CON OJITO
 
+        // INTERPRETACIÓN INTERNA DE LA PETICIÓN CON OJITO
         const originalPrompt = messages[lastUserIndex].content;
 
         const ojitoResult = await interpretPrompt(originalPrompt, {
@@ -411,62 +373,55 @@ const projectImpactContext = files.length
         });
 
         const technicalPrompt = ojitoResult.technicalPrompt;
-       // ──────────────────────────────────────────────
-// INVESTIGACIÓN + MOTOR DE DISEÑO PROFESIONAL
-// ──────────────────────────────────────────────
-let designContext = "";
 
-try {
-    // Primero intentamos el motor profesional (mucho más potente)
-    designContext = await runProfessionalDesignEngine({
-        prompt: originalPrompt,
-        apiKey: process.env.SERPER_API_KEY
-    });
-} catch (err) {
-    console.warn("PROFESSIONAL DESIGN ENGINE falló, usando fallback:", err.message);
-    // Fallback al sistema anterior por si algo falla
-    designContext = await runDesignResearch({
-        prompt: originalPrompt,
-        apiKey: process.env.SERPER_API_KEY
-    });
-}
+        // ──────────────────────────────────────────────
+        // MOTOR DE DISEÑO PROFESIONAL
+        // ──────────────────────────────────────────────
+        let designContext = "";
 
-if (designContext) {
-    messages[lastUserIndex].content += "\n\n" + designContext;
-}
+        try {
+            designContext = await runProfessionalDesignEngine({
+                prompt: originalPrompt,
+                apiKey: process.env.SERPER_API_KEY
+            });
+        } catch (err) {
+            console.warn("PROFESSIONAL DESIGN ENGINE falló, usando fallback:", err.message);
+            designContext = await runDesignResearch({
+                prompt: originalPrompt,
+                apiKey: process.env.SERPER_API_KEY
+            });
+        }
+
+        if (designContext) {
+            messages[lastUserIndex].content += "\n\n" + designContext;
+        }
+
         if (files.length) {
-    messages[lastUserIndex].content +=
-        "\n\n" +
-        projectImpactContext +
-        "\n\nARCHIVOS ORIGINALES DEL PROYECTO:\n\n" +
-        buildProjectContext(files);
-}
+            messages[lastUserIndex].content +=
+                "\n\n" +
+                projectImpactContext +
+                "\n\nARCHIVOS ORIGINALES DEL PROYECTO:\n\n" +
+                buildProjectContext(files);
+        }
 
+        const systemPrompt = `${privatePrompt}\n\n${CODEREX_ENGINE_PROMPT}`;
 
-        
-             const systemPrompt =
-            `${privatePrompt}\n\n${CODEREX_ENGINE_PROMPT}`;
-
- const data = await runRepairPipeline({
-    apiKey,
-    messages,
-    files,
-    systemPrompt,
-    technicalPrompt,
-    originalPrompt,
-    filesReceived: files.length
-});
+        const data = await runRepairPipeline({
+            apiKey,
+            messages,
+            files,
+            systemPrompt,
+            technicalPrompt,
+            originalPrompt,
+            filesReceived: files.length
+        });
 
         return res.status(200).json(
-    toClientResponse(data.content)
-);
-
-        
-
+            toClientResponse(data.content)
+        );
 
     } catch (error) {
         console.error("CODEREX AGENT ERROR:", error);
-
         return res.status(400).json({
             error: error.message || "Error procesando el proyecto."
         });
