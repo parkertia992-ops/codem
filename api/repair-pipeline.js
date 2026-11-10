@@ -630,19 +630,10 @@ async function runRepairPipeline({
     messages,
     files,
     systemPrompt,
-    technicalPrompt,
     filesReceived
 }) {
     if (!apiKey) {
         throw new Error("Falta GROQ_API_KEY.");
-    }
-    if (
-        typeof technicalPrompt !== "string" ||
-        !technicalPrompt.trim()
-    ) {
-        throw new Error(
-            "No se recibió la especificación técnica de Ojito."
-        );
     }
     const conversation = messages.filter(message =>
         ["user", "assistant"].includes(message.role)
@@ -661,8 +652,7 @@ async function runRepairPipeline({
    const analyzerInput = [
     "PETICIÓN ORIGINAL Y CONVERSACIÓN:",
     JSON.stringify(conversation),
-    "ESPECIFICACIÓN TÉCNICA PREPARADA POR OJITO:",
-    technicalPrompt,
+    
     "ARCHIVOS DEL PROYECTO:",
     projectContext || "No se recibieron archivos."
 ].join("\n\n");
@@ -716,8 +706,7 @@ async function runRepairPipeline({
         role: "system",
         content: [
             systemPrompt,
-            "ESPECIFICACIÓN TÉCNICA PREPARADA POR OJITO:",
-            technicalPrompt,
+            
             "La petición original del usuario se conserva en la conversación."
         ].join("\n\n")
     },
