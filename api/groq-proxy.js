@@ -10,7 +10,6 @@ const {
     extractGroqContent,
     toClientResponse
 } = require("./groq-response");
-const { interpretPrompt } = require("./ojito");
 
 module.exports = async (req, res) => {
     res.setHeader("Content-Type", "application/json");
