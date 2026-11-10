@@ -1,3 +1,4 @@
+const CoderexAssets = require('./coderex-assets'); // Ajusta la ruta relativa si está en otra carpeta (ej: '../coderex-assets')
 const {
     runRepairPipeline
 } = require("./repair-pipeline");
