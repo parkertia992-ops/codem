@@ -132,33 +132,10 @@ module.exports = async (req, res) => {
                 securityResult?.reason || "UNKNOWN_SECURITY_ERROR"
             );
         }
-        // OJITO: INTERPRETACIÓN INTERNA PARA EL MODELO PRINCIPAL
+    
 
-        let technicalPrompt = "";
-
-        if (type === "main") {
-            const lastUserIndex = safeMessages
-                .map(message => message.role)
-                .lastIndexOf("user");
-
-            if (lastUserIndex < 0) {
-                return res.status(400).json({
-                    error: "No se encontró una petición del usuario."
-                });
-            }
-
-            const ojitoResult = await interpretPrompt(
-                safeMessages[lastUserIndex].content,
-                {
-                    conversationContext: JSON.stringify(
-                        safeMessages.slice(0, lastUserIndex)
-                    ),
-                    projectContext: body.projectContext || ""
-                }
-            );
-
-            technicalPrompt = ojitoResult.technicalPrompt;
-        }
+        
+        
         // Solicitud privada a Groq
         const groqResponse = await fetch(
             "https://api.groq.com/openai/v1/chat/completions",
@@ -176,8 +153,6 @@ module.exports = async (req, res) => {
         content: type === "main"
             ? [
                 systemPrompt,
-                "ESPECIFICACIÓN TÉCNICA PREPARADA POR OJITO:",
-                technicalPrompt,
                 "La petición original del usuario se conserva en la conversación."
             ].join("\n\n")
             : systemPrompt
