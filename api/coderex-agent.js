@@ -1,3 +1,21 @@
+const {
+    runRepairPipeline
+} = require("./repair-pipeline");
+const { interpretPrompt } = require("./ojito");
+const {
+    toClientResponse
+} = require("./groq-response");
+const { inspectPrompt } = require("./security/prompt-guard");
+const {
+    runDesignResearch
+} = require("./design-research");
+const {
+    runProfessionalDesignEngine   // ← NUEVO
+} = require("./professional-design-engine");
+const {
+    buildProjectMap,
+    getRelatedFiles
+} = require("./project-impact-engine");
 const designContext = await runProfessionalDesignEngine({
   prompt: originalPrompt,
   apiKey: process.env.SERPER_API_KEY
@@ -377,17 +395,28 @@ const projectImpactContext = files.length
         });
 
         const technicalPrompt = ojitoResult.technicalPrompt;
-        // INVESTIGACIÓN DE REFERENCIAS VISUALES CON SERPER
+       // ──────────────────────────────────────────────
+// INVESTIGACIÓN + MOTOR DE DISEÑO PROFESIONAL
+// ──────────────────────────────────────────────
+let designContext = "";
 
-const designContext = await runDesignResearch({
-    prompt: originalPrompt,
-    apiKey: process.env.SERPER_API_KEY
-});
+try {
+    // Primero intentamos el motor profesional (mucho más potente)
+    designContext = await runProfessionalDesignEngine({
+        prompt: originalPrompt,
+        apiKey: process.env.SERPER_API_KEY
+    });
+} catch (err) {
+    console.warn("PROFESSIONAL DESIGN ENGINE falló, usando fallback:", err.message);
+    // Fallback al sistema anterior por si algo falla
+    designContext = await runDesignResearch({
+        prompt: originalPrompt,
+        apiKey: process.env.SERPER_API_KEY
+    });
+}
 
 if (designContext) {
-    messages[lastUserIndex].content +=
-        "\n\n" +
-        designContext;
+    messages[lastUserIndex].content += "\n\n" + designContext;
 }
         if (files.length) {
     messages[lastUserIndex].content +=
