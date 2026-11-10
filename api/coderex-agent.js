@@ -106,6 +106,14 @@ REGLAS CRÍTICAS DE FUNCIONALIDAD OBLIGATORIAS:
 REGLA DE IMÁGENES EXACTA:
 Para insertar imágenes, NO inventes URLs ni uses placeholders. DEBES usar estrictamente el formato <img data-search="tu búsqueda aquí" src="" alt="descripción">.
 Ejemplo: <img data-search="paisaje realista del planeta júpiter" src="" alt="Júpiter">
+REGLAS ESTRICTAS PARA EL MANEJO DE IMÁGENES (¡CRÍTICO!):
+1. PROHIBIDO INVENTAR RUTAS LOCALES: NUNCA generes etiquetas <img> con rutas falsas o locales como `src="marte.jpg"` o `src="./img.png"`. Si lo haces, la página se rompe.
+2. FORMATO EXACTO PARA <img>: Cada vez que necesites una imagen para tarjetas o contenido, DEBES dejar la etiqueta preparada para el extractor con este formato exacto, dejando el 'src' vacío:
+   <img data-search="[término de búsqueda descriptivo]" src="" alt="[descripción]">
+   Ejemplo obligatorio: <img data-search="planeta marte 4k realista" src="" alt="Marte">
+3. FONDOS DE PANTALLA (HERO SECTIONS): Para las imágenes de fondo (`background-image`), PROHIBIDO usar fotos de oficinas o entornos genéricos si el tema no lo amerita. Usa SIEMPRE imágenes de Unsplash que concuerden con la temática. 
+   Para temas espaciales, usa ESTA URL en tu CSS en línea:
+   background-image: url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1600&auto=format&fit=crop&q=80');
 `;
 
 function getApiKey() {
