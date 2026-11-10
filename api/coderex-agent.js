@@ -1,7 +1,7 @@
 const {
     runRepairPipeline
 } = require("./repair-pipeline");
-const { interpretPrompt } = require("./ojito");
+
 const {
     toClientResponse
 } = require("./groq-response");
@@ -278,19 +278,8 @@ module.exports = async function handler(req, res) {
         if (!security.safe) {
             console.warn("CODEREX SECURITY:", security.reason);
         }
-
-        // INTERPRETACIÓN INTERNA DE LA PETICIÓN CON OJITO
-        const originalPrompt = messages[lastUserIndex].content;
-
-        const ojitoResult = await interpretPrompt(originalPrompt, {
-            conversationContext: JSON.stringify(
-                messages.slice(0, lastUserIndex)
-            ),
-            projectContext: [
-                projectImpactContext,
-                buildProjectContext(files)
-            ].filter(Boolean).join("\n\n")
-        });
+const originalPrompt = messages[lastUserIndex].content;
+const technicalPrompt = originalPrompt;
 
         const technicalPrompt = ojitoResult.technicalPrompt;
 
