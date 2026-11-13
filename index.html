@@ -427,6 +427,13 @@ renderAssistantMessage(aiBubble, respuestaGroq);
     }
 });
     </script>
-
+<script>
+// Parche Coderex: si quedó __CODEREX_IMAGE__, lo reemplazamos en el navegador
+document.querySelectorAll('img[src*="__CODEREX_IMAGE__"], img[src*="placeholder.coderex"]').forEach(img => {
+  const q = encodeURIComponent(img.getAttribute('data-search') || img.alt || 'coche deportivo');
+  img.src = `https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&auto=format&fit=crop&q=80`;
+  img.onerror = () => { img.src = `https://picsum.photos/seed/${q}/800/500`; };
+});
+</script>
 </body>
 </html>
