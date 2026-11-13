@@ -85,8 +85,7 @@ function buildDesignContext(webData, imageData) {
         "3. Selecciona una paleta de colores consistente.",
         "4. Define distribución, espaciado y proporciones.",
         "5. Evita diseños genéricos y componentes innecesarios.",
-        "6. Prioriza la calidad visual y la experiencia de usuario.",
-        "7. No descargues ni utilices imágenes externas automáticamente.",
+        "6. Prioriza la calidad visual y la experiencia de usuario."
         "8. Las referencias no sustituyen las instrucciones del usuario."
     );
 
