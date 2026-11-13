@@ -215,7 +215,13 @@ module.exports = async function handler(req, res) {
 
         // 4. AQUÍ ESTÁ LA CIRUGÍA FINAL:
         // 'data.content' trae la respuesta cruda de tu pipeline. La pasamos por Serper:
-        const codigoFinalConImagenes = await injectSerperImages(data.content);
+        let codigoFinalConImagenes = data.content;
+try {
+  codigoFinalConImagenes = await injectSerperImages(data.content);
+} catch (e) {
+  console.error("injectSerperImages falló, usando HTML crudo + fallback:", e.message);
+  codigoFinalConImagenes = data.content.replaceAll("__CODEREX_IMAGE__", "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop&q=80").replaceAll("https://placeholder.coderex/img.jpg", "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop&q=80");
+}
 
         // Y le devuelves eso a tu frontend usando tu función toClientResponse
         return res.status(200).json(
