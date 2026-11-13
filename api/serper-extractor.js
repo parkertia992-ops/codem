@@ -15,7 +15,7 @@ async function injectSerperImages(htmlString) {
         throw new Error("Falta configurar SERPER_API_KEY en Vercel.");
     }
 
-    const regex = /<img\b[^>]*\bdata-search=["']([^"']+)["'][^>]*>/gi;
+    const regex = /<img\b[^>]*>/gi;
 
     const matches = [...htmlString.matchAll(regex)];
 
@@ -25,10 +25,11 @@ async function injectSerperImages(htmlString) {
     const imageCache = new Map();
 
     for (const match of matches) {
-        const originalTag = match[0];
-        const searchQuery = match[1].trim();
+    const originalTag = match[0];
+    const searchQuery = (originalTag.match(/data-search=["']([^"']+)["']/i)?.[1] || originalTag.match(/alt=["']([^"']+)["']/i)?.[1] || "").trim();
 
-        if (!searchQuery) continue;
+    if (!searchQuery) continue;
+    if (/src=["']https?:\/\//i.test(originalTag)) continue;
 
         try {
             let imageUrl = imageCache.get(searchQuery);
@@ -73,11 +74,10 @@ async function injectSerperImages(htmlString) {
                 imageCache.set(searchQuery, imageUrl);
             }
 
-            // Sustituimos el src vacío sin modificar el resto de atributos.
-            const newTag = originalTag.replace(
-                /\bsrc\s*=\s*(["'])[^"']*\1/i,
-                `src="${imageUrl}"`
-            );
+            // Si no tiene src, lo agregamos. Si lo tiene vacío/roto, lo reemplazamos.
+const newTag = /\bsrc\s*=/i.test(originalTag)
+  ? originalTag.replace(/\bsrc\s*=\s*(["'])[^"']*\1/i, `src="${imageUrl}"`)
+  : originalTag.replace(/<img/i, `<img src="${imageUrl}"`);
 
             finalHtml = finalHtml.replace(originalTag, newTag);
 
@@ -89,7 +89,8 @@ async function injectSerperImages(htmlString) {
             );
         }
     }
-
+// Convierte Markdown ![alt](url) y URLs sueltas en <img> real
+finalHtml = finalHtml.replace(/!\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/g, '<img src="$2" alt="$1">');
     return finalHtml;
 }
 
