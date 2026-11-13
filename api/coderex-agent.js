@@ -21,7 +21,9 @@ REGLAS DE DISEÑO OBLIGATORIAS:
 REGLA CRÍTICA DE IMÁGENES (¡ESTRICTAMENTE OBLIGATORIO!):
 PROHIBIDO inventar rutas locales de imágenes como src="marte.jpg". Si lo haces, la página se rompe.
 Siempre que necesites insertar una imagen para tarjetas o contenido, DEBES generar la etiqueta <img> utilizando el atributo 'data-search' con una consulta detallada y dejar el 'src' vacío.
-FORMATO EXACTO: <img data-search="[término de búsqueda, ej: planeta marte 4k]" src="" alt="[descripción]">
+FORMATO EXACTO: <img data-search="[término de búsqueda, ej: planeta marte 4k]" src="https://placeholder.coderex/img.jpg" alt="[descripción]">
+PROHIBIDO usar Markdown ![...](...), PROHIBIDO pegar URLs sueltas como texto, PROHIBIDO usar <a href="...imagen...">. Solo <img>.
+PROHIBIDO envolver el HTML en ```html o en <pre><code>.
 
 FONDOS DE PANTALLA (HERO SECTIONS): Para el background-image del CSS, USA SIEMPRE ESTA URL EXACTA de Unsplash para la temática espacial:
 background-image: url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1600&auto=format&fit=crop&q=80');
