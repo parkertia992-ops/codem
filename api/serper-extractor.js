@@ -33,7 +33,7 @@ if (!apiKey) {
     if (/src=["']https?:\/\//i.test(originalTag)) continue;
 
         try {
-            let imageUrl = imageCache.get(searchQuery);
+            let imageUrl = imageCache.get(searchQuery) || FALLBACK;
 
             if (!imageUrl) {
                 const response = await fetch(SERPER_URL, {
@@ -67,9 +67,10 @@ if (!apiKey) {
                 });
 
                 if (!image) {
-                    console.warn("No se encontraron imágenes:", searchQuery);
-                    continue;
-                }
+    console.warn("No se encontraron imágenes:", searchQuery, "usando fallback.");
+    imageUrl = FALLBACK;
+    imageCache.set(searchQuery, imageUrl);
+}
 
                 imageUrl = image.imageUrl;
                 imageCache.set(searchQuery, imageUrl);
@@ -83,12 +84,13 @@ const newTag = /\bsrc\s*=/i.test(originalTag)
             finalHtml = finalHtml.replace(originalTag, newTag);
 
         } catch (error) {
-            console.error(
-                "Error buscando imagen:",
-                searchQuery,
-                error.message
-            );
-        }
+    console.error("Error buscando imagen:", searchQuery, error.message);
+    // Aunque Serper falle, JAMÁS dejar el placeholder roto
+    const newTagFallback = /\bsrc\s*=/i.test(originalTag)
+      ? originalTag.replace(/\bsrc\s*=\s*(["'])[^"']*\1/i, `src="${FALLBACK}"`)
+      : originalTag.replace(/<img/i, `<img src="${FALLBACK}"`);
+    finalHtml = finalHtml.replace(originalTag, newTagFallback);
+}
     }
 // Convierte Markdown ![alt](url) y URLs sueltas en <img> real
 finalHtml = finalHtml.replace(/!\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/g, '<img src="$2" alt="$1">');
