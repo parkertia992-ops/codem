@@ -38,7 +38,7 @@ function buildDesignContext(webData, imageData) {
         "- Utiliza estas referencias como inspiración.",
         "- No copies diseños protegidos de forma literal.",
         "- No inventes información que no aparece en los resultados.",
-        "- No afirmes que has visto imágenes si no puedes acceder a ellas.",
+        "- Las URLs de imágenes de referencia son solo inspiración, NO las pegues como texto. El contenido visual va SIEMPRE en <img data-search=\"...\">.",
         "- Decide qué elementos son apropiados para el proyecto.",
         "",
         "REFERENCIAS WEB:"
