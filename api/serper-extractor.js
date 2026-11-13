@@ -11,9 +11,10 @@ async function injectSerperImages(htmlString) {
 
     const apiKey = process.env.SERPER_API_KEY;
 
-    if (!apiKey) {
-        throw new Error("Falta configurar SERPER_API_KEY en Vercel.");
-    }
+    const FALLBACK = "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop&q=80";
+if (!apiKey) {
+    console.warn("SERPER_API_KEY no configurada, usando fallback Unsplash para todas las imágenes.");
+}
 
     const regex = /<img\b[^>]*>/gi;
 
