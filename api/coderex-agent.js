@@ -218,6 +218,13 @@ module.exports = async function handler(req, res) {
         let codigoFinalConImagenes = data.content;
 try {
   codigoFinalConImagenes = await injectSerperImages(data.content);
+  // Parche final: si quedó algún __CODEREX_IMAGE__, el navegador lo arregla solo
+  const parche = `<script>document.querySelectorAll('img[src*="__CODEREX_IMAGE__"],img[src*="placeholder.coderex"]').forEach(img=>{const q=(img.getAttribute('data-search')||img.alt||'coche deportivo').split(' ').slice(0,3).join(',');img.src='https://loremflickr.com/800/500/'+encodeURIComponent(q);img.onerror=()=>{img.src='https://picsum.photos/seed/'+encodeURIComponent(q)+'/800/500';};});<\/script>`;
+  if (codigoFinalConImagenes.includes('</body>')) {
+    codigoFinalConImagenes = codigoFinalConImagenes.replace('</body>', parche + '</body>');
+  } else {
+    codigoFinalConImagenes += parche;
+  }
 } catch (e) {
   console.error("injectSerperImages falló, usando HTML crudo + fallback:", e.message);
   codigoFinalConImagenes = data.content.replaceAll("__CODEREX_IMAGE__", "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop&q=80").replaceAll("https://placeholder.coderex/img.jpg", "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop&q=80");
