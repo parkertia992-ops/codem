@@ -18,17 +18,23 @@ REGLAS DE DISEÑO OBLIGATORIAS:
 2. TIPOGRAFÍA: Inyecta automáticamente los enlaces de Google Fonts (como 'Inter', 'Plus Jakarta Sans') en el <head> y aplícalas.
 3. INTERACTIVIDAD: Agrega transiciones (\`transition: all 0.3s ease\`) y efectos hover en los botones.
 
-REGLA CRÍTICA DE IMÁGENES (¡ESTRICTAMENTE OBLIGATORIO!):
-PROHIBIDO inventar rutas locales de imágenes como src="marte.jpg". Si lo haces, la página se rompe.
-Siempre que necesites insertar una imagen para tarjetas o contenido, DEBES generar la etiqueta <img> utilizando el atributo 'data-search' con una consulta detallada y dejar el 'src' vacío.
-FORMATO EXACTO: <img data-search="[término de búsqueda, ej: planeta marte 4k]" src="https://placeholder.coderex/img.jpg" alt="[descripción]">
-PROHIBIDO usar Markdown ![...](...), PROHIBIDO pegar URLs sueltas como texto, PROHIBIDO usar <a href="...imagen...">. Solo <img>.
-PROHIBIDO envolver el HTML en ```html o en <pre><code>.
+REGLA CRÍTICA DE IMÁGENES (OBLIGATORIA - NO NEGOCIABLE):
 
-FONDOS DE PANTALLA (HERO SECTIONS): Para el background-image del CSS, USA SIEMPRE ESTA URL EXACTA de Unsplash para la temática espacial:
-background-image: url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1600&auto=format&fit=crop&q=80');
+NUNCA, bajo ninguna circunstancia, inventes rutas locales como:
+- src="image/nose.jpg"
+- src="./images/foto.png"
+- src="assets/hero.jpg"
+- src="marte.jpg"
 
-ESTRUCTURA: Devuelve un HTML único, limpio y autocontenido.
+SIEMPRE usa EXACTAMENTE este formato:
+
+<img data-search="descripción precisa y detallada de la imagen" src="https://placeholder.coderex/img.jpg" alt="descripción corta">
+
+Ejemplos correctos:
+<img data-search="perro golden retriever corriendo en la playa al atardecer" src="https://placeholder.coderex/img.jpg" alt="Perro en la playa">
+<img data-search="cocina moderna minimalista con isla de mármol" src="https://placeholder.coderex/img.jpg" alt="Cocina moderna">
+
+Si no sigues este formato exacto, las imágenes se romperán.
 `;
 
 // TUS FUNCIONES INTACTAS
@@ -213,22 +219,64 @@ module.exports = async function handler(req, res) {
             filesReceived: files.length
         });
 
-        // 4. AQUÍ ESTÁ LA CIRUGÍA FINAL:
-        // 'data.content' trae la respuesta cruda de tu pipeline. La pasamos por Serper:
+                // 4. CIRUGÍA FINAL DE IMÁGENES
         let codigoFinalConImagenes = data.content;
-try {
-  codigoFinalConImagenes = await resolveImages(data.content);
-  // Parche final: si quedó algún __CODEREX_IMAGE__, el navegador lo arregla solo
-  const parche = `<script>document.querySelectorAll('img[src*="__CODEREX_IMAGE__"],img[src*="placeholder.coderex"]').forEach(img=>{const q=(img.getAttribute('data-search')||img.alt||'coche deportivo').split(' ').slice(0,3).join(',');img.src='https://loremflickr.com/800/500/'+encodeURIComponent(q);img.onerror=()=>{img.src='https://picsum.photos/seed/'+encodeURIComponent(q)+'/800/500';};});<\/script>`;
-  if (codigoFinalConImagenes.includes('</body>')) {
-    codigoFinalConImagenes = codigoFinalConImagenes.replace('</body>', parche + '</body>');
-  } else {
-    codigoFinalConImagenes += parche;
+
+        try {
+            codigoFinalConImagenes = await resolveImages(data.content);
+        } catch (e) {
+            console.error("resolveImages falló:", e.message);
+            // Fallback de emergencia: reemplazamos placeholders conocidos
+            codigoFinalConImagenes = data.content
+                .replaceAll("__CODEREX_IMAGE__", "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop&q=80")
+                .replaceAll("https://placeholder.coderex/img.jpg", "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop&q=80");
+        }
+
+        // Parche de cliente ULTRA AGRESIVO
+        // Captura CUALQUIER imagen que todavía tenga src local o roto
+        const parcheCliente = `
+<script>
+(function() {
+  function fixBrokenImages() {
+    const images = document.querySelectorAll('img');
+    images.forEach(img => {
+      const src = img.getAttribute('src') || '';
+      const isBroken = !src || 
+                       src.startsWith('image/') || 
+                       src.startsWith('./') || 
+                       src.startsWith('../') ||
+                       src.includes('placeholder.coderex') ||
+                       src.includes('__CODEREX_IMAGE__') ||
+                       (!src.startsWith('http') && !src.startsWith('data:'));
+
+      if (isBroken) {
+        const query = (img.getAttribute('data-search') || img.alt || img.title || 'modern photo').trim();
+        const cleanQuery = query.split(' ').slice(0, 4).join(',');
+        img.src = 'https://loremflickr.com/800/600/' + encodeURIComponent(cleanQuery);
+        img.onerror = function() {
+          this.src = 'https://picsum.photos/seed/' + encodeURIComponent(cleanQuery) + '/800/600';
+        };
+      }
+    });
   }
-} catch (e) {
-  console.error("injectSerperImages falló, usando HTML crudo + fallback:", e.message);
-  codigoFinalConImagenes = data.content.replaceAll("__CODEREX_IMAGE__", "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop&q=80").replaceAll("https://placeholder.coderex/img.jpg", "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop&q=80");
-}
+
+  // Ejecutar cuando el DOM esté listo
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', fixBrokenImages);
+  } else {
+    fixBrokenImages();
+  }
+
+  // También por si se inyecta después
+  setTimeout(fixBrokenImages, 300);
+})();
+<\/script>`;
+
+        if (codigoFinalConImagenes.includes('</body>')) {
+            codigoFinalConImagenes = codigoFinalConImagenes.replace('</body>', parcheCliente + '</body>');
+        } else {
+            codigoFinalConImagenes += parcheCliente;
+        }
 
         // Y le devuelves eso a tu frontend usando tu función toClientResponse
         return res.status(200).json(
