@@ -6,7 +6,7 @@ const { runProfessionalDesignEngine } = require("./professional-design-engine");
 const { buildProjectMap, getRelatedFiles } = require("./project-impact-engine");
 
 // 1. IMPORTAMOS EL EXTRACTOR DE SERPER (Limpio, sin basura flotando)
-const { injectSerperImages } = require('./serper-extractor');
+const { resolveImages } = require('./image-resolver');
 
 const MAX_FILES = 100;
 const MAX_TOTAL_CHARS = 300000;
@@ -217,7 +217,7 @@ module.exports = async function handler(req, res) {
         // 'data.content' trae la respuesta cruda de tu pipeline. La pasamos por Serper:
         let codigoFinalConImagenes = data.content;
 try {
-  codigoFinalConImagenes = await injectSerperImages(data.content);
+  codigoFinalConImagenes = await resolveImages(data.content);
   // Parche final: si quedó algún __CODEREX_IMAGE__, el navegador lo arregla solo
   const parche = `<script>document.querySelectorAll('img[src*="__CODEREX_IMAGE__"],img[src*="placeholder.coderex"]').forEach(img=>{const q=(img.getAttribute('data-search')||img.alt||'coche deportivo').split(' ').slice(0,3).join(',');img.src='https://loremflickr.com/800/500/'+encodeURIComponent(q);img.onerror=()=>{img.src='https://picsum.photos/seed/'+encodeURIComponent(q)+'/800/500';};});<\/script>`;
   if (codigoFinalConImagenes.includes('</body>')) {
