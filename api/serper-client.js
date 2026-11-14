@@ -6,7 +6,7 @@ async function requestSerper(endpoint, apiKey, query) {
     const response = await fetch(`${SERPER_URL}/${endpoint}`, {
         method: "POST",
         headers: {
-            "X-API-KEY": apiKey,
+         "X-API-KEY": process.env.SERPER_API_KEY || "",
             "Content-Type": "application/json"
         },
         body: JSON.stringify({ q: query, num: 6, gl: "ec", hl: "es" })
