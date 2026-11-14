@@ -1,37 +1,36 @@
 // api/image-resolver.js
-// Resuelve imágenes reales para el HTML/JS/JSON que genera la IA.
-// Cubre dos casos:
-//  1) <img data-search="..." src="..."> con placeholder o src vacío/roto.
-//  2) Rutas locales inventadas en cualquier parte del código ("images/marte.jpg", "urano.jpg", etc.),
-//     incluyendo las que vienen dentro de arrays/objetos JSON (usa el "name" cercano como pista
-//     para buscar algo más preciso que el nombre del archivo).
+// Resuelve CUALQUIER imagen inventada por la IA (rutas locales, placeholders, etc.)
 
 const SERPER_URL = "https://google.serper.dev/images";
 const FALLBACK = "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop&q=80";
 
 async function searchImage(query, apiKey) {
-    if (!apiKey) return FALLBACK;
+    if (!apiKey || !query || query.length < 2) return FALLBACK;
 
     try {
         const response = await fetch(SERPER_URL, {
             method: "POST",
-            headers: { "X-API-KEY": apiKey, "Content-Type": "application/json" },
-            body: JSON.stringify({ q: query, num: 5 })
+            headers: {
+                "X-API-KEY": apiKey,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ q: query, num: 8 })
         });
 
-        if (!response.ok) {
-            throw new Error(`Serper respondió HTTP ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`Serper HTTP ${response.status}`);
 
         const data = await response.json();
         const image = (data.images || []).find(item => {
-            try { return new URL(item.imageUrl).protocol === "https:"; }
-            catch { return false; }
+            try {
+                return new URL(item.imageUrl).protocol === "https:";
+            } catch {
+                return false;
+            }
         });
 
         return image ? image.imageUrl : FALLBACK;
     } catch (error) {
-        console.error("image-resolver: fallo buscando", query, "-", error.message);
+        console.error("image-resolver: error buscando", query, "→", error.message);
         return FALLBACK;
     }
 }
@@ -39,22 +38,32 @@ async function searchImage(query, apiKey) {
 function makeResolver(apiKey) {
     const cache = new Map();
     return async function resolve(query) {
-        const key = query.trim().toLowerCase();
+        const key = (query || "").trim().toLowerCase();
         if (!key) return FALLBACK;
         if (cache.has(key)) return cache.get(key);
+
         const url = await searchImage(key, apiKey);
         cache.set(key, url);
         return url;
     };
 }
 
-// Busca un campo "name": "..." dentro de los ~400 caracteres anteriores a `index`,
-// sin salirse del objeto JSON que lo contiene (heurística simple basada en el último '{').
+// Limpia el nombre del archivo para usarlo como query
+function cleanFilename(path) {
+    return path
+        .split("/").pop()
+        .replace(/\.[^.]+$/, "")          // quita extensión
+        .replace(/[-_]+/g, " ")           // guiones → espacios
+        .replace(/\d+/g, "")              // quita números
+        .trim();
+}
+
+// Busca un "name" cercano en JSON (útil cuando hay arrays de objetos)
 function findNearbyName(text, index) {
-    const start = Math.max(0, index - 400);
+    const start = Math.max(0, index - 500);
     const chunk = text.slice(start, index);
-    const lastOpenBrace = chunk.lastIndexOf("{");
-    const scoped = lastOpenBrace >= 0 ? chunk.slice(lastOpenBrace) : chunk;
+    const lastOpen = chunk.lastIndexOf("{");
+    const scoped = lastOpen >= 0 ? chunk.slice(lastOpen) : chunk;
     const match = scoped.match(/"name"\s*:\s*"([^"]+)"/i);
     return match ? match[1] : "";
 }
@@ -65,49 +74,101 @@ async function resolveImages(sourceText, apiKey = process.env.SERPER_API_KEY) {
     }
 
     if (!apiKey) {
-        console.warn("image-resolver: SERPER_API_KEY no configurada, se usará el fallback fijo.");
+        console.warn("⚠️ image-resolver: SERPER_API_KEY no configurada → usando fallback");
     }
 
     const resolve = makeResolver(apiKey);
     let result = sourceText;
 
-    // 1) Etiquetas <img> con data-search/alt y src vacío, roto o placeholder.
+    // ──────────────────────────────────────────────
+    // 1. Etiquetas <img> completas
+    // ──────────────────────────────────────────────
     const imgTagRegex = /<img\b[^>]*>/gi;
-    for (const match of [...result.matchAll(imgTagRegex)]) {
+    const imgMatches = [...result.matchAll(imgTagRegex)];
+
+    for (const match of imgMatches) {
         const tag = match[0];
+
+        // Si ya tiene una URL real de internet, la dejamos
         if (/src\s*=\s*["']https?:\/\//i.test(tag)) continue;
 
-        const query = (tag.match(/data-search=["']([^"']+)["']/i)?.[1]
-            || tag.match(/alt=["']([^"']+)["']/i)?.[1]
-            || "").trim();
+        // Extraemos posibles queries
+        const dataSearch = tag.match(/data-search\s*=\s*["']([^"']+)["']/i)?.[1] || "";
+        const alt = tag.match(/alt\s*=\s*["']([^"']+)["']/i)?.[1] || "";
+        const src = tag.match(/src\s*=\s*["']([^"']*)["']/i)?.[1] || "";
 
-        if (!query) continue;
+        let query = dataSearch || alt;
+
+        // Si el src es una ruta local, usamos el nombre del archivo
+        if (!query && src && !src.startsWith("http") && !src.startsWith("data:")) {
+            query = cleanFilename(src);
+        }
+
+        // Fallback de último recurso
+        if (!query) query = "modern high quality photo";
 
         const url = await resolve(query);
-        const newTag = /\bsrc\s*=/i.test(tag)
-            ? tag.replace(/\bsrc\s*=\s*(["'])[^"']*\1/i, `src="${url}"`)
-            : tag.replace(/<img/i, `<img src="${url}"`);
+
+        let newTag;
+        if (/\bsrc\s*=/i.test(tag)) {
+            newTag = tag.replace(/\bsrc\s*=\s*(["']?)[^"'\s>]*\1/i, `src="${url}"`);
+        } else {
+            newTag = tag.replace(/<img/i, `<img src="${url}"`);
+        }
 
         result = result.replace(tag, newTag);
     }
 
-    // 2) Rutas locales inventadas en cualquier parte (HTML, JS o JSON),
-    // con o sin carpeta: "images/marte.jpg", "urano.jpg", './assets/foto.png', etc.
-    const localPathRegex = /(["'])((?!https?:\/\/)(?!data:)[^"'<>]*\.(?:jpe?g|png|webp|gif|svg))\1/gi;
-    for (const match of [...result.matchAll(localPathRegex)]) {
-        const [fullMatch, quote, localPath] = match;
-        const niceName = findNearbyName(result, match.index);
-        const fileBase = localPath.split("/").pop().replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ");
-        const query = (niceName || fileBase).trim();
+    // ──────────────────────────────────────────────
+    // 2. Rutas locales entre comillas (cualquier parte del código)
+    //    Ej: "image/nose.jpg", './assets/foto.png', "images/marte.jpg"
+    // ──────────────────────────────────────────────
+    const localPathRegex = /(["'])((?!https?:\/\/)(?!data:)(?!blob:)[^"'<>\s]*\.(?:jpe?g|png|webp|gif|svg|avif))\1/gi;
+    const pathMatches = [...result.matchAll(localPathRegex)];
 
-        if (!query) continue;
+    // Procesamos de atrás hacia adelante para no romper los índices
+    for (let i = pathMatches.length - 1; i >= 0; i--) {
+        const match = pathMatches[i];
+        const [fullMatch, quote, localPath] = match;
+
+        const niceName = findNearbyName(result, match.index);
+        const fileBase = cleanFilename(localPath);
+        const query = (niceName || fileBase || "photo").trim();
 
         const url = await resolve(query);
-        result = result.replace(fullMatch, `${quote}${url}${quote}`);
+        result = result.slice(0, match.index) + `${quote}${url}${quote}` + result.slice(match.index + fullMatch.length);
     }
 
-    // 3) Markdown ![alt](url) suelto -> <img> real
-    result = result.replace(/!\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/g, '<img src="$2" alt="$1">');
+    // ──────────────────────────────────────────────
+    // 3. CSS background-image: url(...) con rutas locales
+    // ──────────────────────────────────────────────
+    result = result.replace(
+        /url\(\s*(['"]?)((?!https?:\/\/)(?!data:)[^)'"]+\.(?:jpe?g|png|webp|gif|svg))\1\s*\)/gi,
+        async (full, quote, localPath) => {
+            // Nota: replace con async no funciona bien, lo hacemos de forma síncrona con fallback
+            return `url(${quote}${FALLBACK}${quote})`;
+        }
+    );
+
+    // Versión síncrona del CSS (más segura)
+    const cssUrlRegex = /url\(\s*(['"]?)((?!https?:\/\/)(?!data:)[^)'"]+\.(?:jpe?g|png|webp|gif|svg))\1\s*\)/gi;
+    const cssMatches = [...result.matchAll(cssUrlRegex)];
+
+    for (let i = cssMatches.length - 1; i >= 0; i--) {
+        const match = cssMatches[i];
+        const [fullMatch, quote, localPath] = match;
+        const query = cleanFilename(localPath) || "background";
+        const url = await resolve(query);
+        result = result.slice(0, match.index) + `url(${quote}${url}${quote})` + result.slice(match.index + fullMatch.length);
+    }
+
+    // ──────────────────────────────────────────────
+    // 4. Markdown suelto → <img>
+    // ──────────────────────────────────────────────
+    result = result.replace(
+        /!\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/g,
+        '<img src="$2" alt="$1">'
+    );
 
     return result;
 }
