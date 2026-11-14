@@ -33,9 +33,13 @@ if (!apiKey) {
     if (/src=["']https?:\/\//i.test(originalTag)) continue;
 
         try {
-            let imageUrl = imageCache.get(searchQuery) || FALLBACK;
+            let imageUrl = imageCache.get(searchQuery);
 
-            if (!imageUrl) {
+if (!imageUrl) {
+    if (!apiKey) {
+        imageUrl = FALLBACK;
+        imageCache.set(searchQuery, imageUrl);
+    } else {
                 const response = await fetch(SERPER_URL, {
                     method: "POST",
                     headers: {
@@ -66,14 +70,14 @@ if (!apiKey) {
                     }
                 });
 
-                if (!image) {
+               if (!image) {
     console.warn("No se encontraron imágenes:", searchQuery, "usando fallback.");
     imageUrl = FALLBACK;
-    imageCache.set(searchQuery, imageUrl);
+} else {
+    imageUrl = image.imageUrl;
 }
-
-                imageUrl = image.imageUrl;
                 imageCache.set(searchQuery, imageUrl);
+                }
             }
 
             // Si no tiene src, lo agregamos. Si lo tiene vacío/roto, lo reemplazamos.
