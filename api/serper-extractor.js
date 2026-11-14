@@ -75,7 +75,7 @@ async function injectSerperImages(htmlString) {
 
     // 2) Rutas locales inventadas en cualquier parte (HTML o JS/JSON):
     // "images/marte.jpg", './img/foto-1.png', "assets/saturno.webp", etc.
-    const localPathRegex = /(["'])((?:\.{1,2}\/)?(?:images?|img|assets|static|fotos?|pictures?)\/[^"'<>]+\.(?:jpe?g|png|webp|gif|svg))\1/gi;
+    const localPathRegex = /(["'])((?!https?:\/\/)(?!data:)[^"'<>]*\.(?:jpe?g|png|webp|gif|svg))\1/gi;
     const localMatches = [...finalHtml.matchAll(localPathRegex)];
 
     for (const match of localMatches) {
