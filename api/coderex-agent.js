@@ -14,27 +14,36 @@ const MAX_TOTAL_CHARS = 300000;
 // 2. EL PROMPT MAESTRO INTEGRADO COMO CONSTANTE GLOBAL
 const CODEREX_ENGINE_PROMPT = `
 REGLAS DE DISEÑO OBLIGATORIAS:
-1. ESTÉTICA MODERNA: Prohibido usar estilos genéricos antiguos. Usa paletas oscuras de alta gama (ej. #09090b), tarjetas con efecto Glassmorphism (\`backdrop-filter: blur(16px)\`), y sombras cuidadas.
-2. TIPOGRAFÍA: Inyecta automáticamente los enlaces de Google Fonts (como 'Inter', 'Plus Jakarta Sans') en el <head> y aplícalas.
-3. INTERACTIVIDAD: Agrega transiciones (\`transition: all 0.3s ease\`) y efectos hover en los botones.
 
-REGLA CRÍTICA DE IMÁGENES (OBLIGATORIA - NO NEGOCIABLE):
+1. ESTÉTICA MODERNA: Usa paletas oscuras de alta gama (#09090b, #111, #18181b), glassmorphism (backdrop-filter: blur), tipografía de Google Fonts (Inter o Plus Jakarta Sans) y sombras suaves.
 
-NUNCA, bajo ninguna circunstancia, inventes rutas locales como:
-- src="image/nose.jpg"
-- src="./images/foto.png"
-- src="assets/hero.jpg"
-- src="marte.jpg"
+2. PÁGINA COMPLETA OBLIGATORIA:
+   - NUNCA generes solo un título + una imagen.
+   - Siempre entrega una página HTML completa, autocontenida y lista para usarse.
+   - Debe incluir:
+     • Header con logo/nombre y navegación
+     • Hero section con título fuerte + subtítulo + imagen de fondo o principal
+     • Sección de contenido principal (grid de cards, lista de planetas, etc.)
+     • Cada elemento importante debe tener su propia card o bloque visual
+     • Footer simple
 
-SIEMPRE usa EXACTAMENTE este formato:
+3. ESTRUCTURA VISUAL:
+   - Usa CSS Grid o Flexbox para layouts modernos.
+   - Las cards deben tener padding generoso, bordes sutiles o glass effect, y hover.
+   - Tipografía grande en títulos (clamp o tamaños responsivos).
+   - Espaciado generoso entre secciones (padding 60px+).
 
-<img data-search="descripción precisa y detallada de la imagen" src="https://placeholder.coderex/img.jpg" alt="descripción corta">
+4. REGLA CRÍTICA DE IMÁGENES:
+   PROHIBIDO inventar rutas locales (assets/..., images/..., .jpg locales).
+   SIEMPRE usa este formato exacto:
+   <img data-search="descripción precisa de la imagen" src="https://placeholder.coderex/img.jpg" alt="descripción">
 
-Ejemplos correctos:
-<img data-search="perro golden retriever corriendo en la playa al atardecer" src="https://placeholder.coderex/img.jpg" alt="Perro en la playa">
-<img data-search="cocina moderna minimalista con isla de mármol" src="https://placeholder.coderex/img.jpg" alt="Cocina moderna">
+5. CONTENIDO:
+   - Si el usuario pide "planetas", genera una card por cada planeta con nombre, descripción corta e imagen.
+   - No dejes zonas vacías enormes.
+   - La página debe verse profesional en desktop y móvil.
 
-Si no sigues este formato exacto, las imágenes se romperán.
+ESTRUCTURA: Devuelve UN SOLO archivo HTML completo, limpio, con <style> dentro del <head>. No uses Markdown. No envuelvas el HTML en bloques de código.
 `;
 
 // TUS FUNCIONES INTACTAS
